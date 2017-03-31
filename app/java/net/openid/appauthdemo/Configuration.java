@@ -30,6 +30,7 @@ import okio.Buffer;
 import okio.BufferedSource;
 import okio.Okio;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -67,6 +68,8 @@ public final class Configuration {
     private Uri mTokenEndpointUri;
     private Uri mRegistrationEndpointUri;
     private boolean mHttpsRequired;
+
+    private JSONArray mAuthorizedKeys;
 
     public static Configuration getInstance(Context context) {
         Configuration config = sInstance.get();
@@ -160,6 +163,8 @@ public final class Configuration {
         return mHttpsRequired;
     }
 
+    public JSONArray getAuthorizedKeys() { return mAuthorizedKeys;}
+
     public ConnectionBuilder getConnectionBuilder() {
         if (isHttpsRequired()) {
             return DefaultConnectionBuilder.INSTANCE;
@@ -190,6 +195,8 @@ public final class Configuration {
         mClientId = getConfigString("client_id");
         mScope = getRequiredConfigString("authorization_scope");
         mRedirectUri = getRequiredConfigUri("redirect_uri");
+
+        mAuthorizedKeys = mConfigJson.optJSONArray("authorized_keys");
 
         if (!isRedirectUriRegistered()) {
             throw new InvalidConfigurationException(
