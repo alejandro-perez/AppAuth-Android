@@ -34,6 +34,9 @@ android {
         targetCompatibility JavaVersion.VERSION_1_8
     }
 
+    packagingOptions {
+        exclude 'META-INF/LICENSE'
+    }
     buildTypes {
         debug {
             signingConfig signingConfigs.debugAndRelease
@@ -52,6 +55,7 @@ dependencies {
     compile 'com.github.bumptech.glide:glide:3.7.0'
     compile 'com.squareup.okio:okio:1.11.0'
     compile 'joda-time:joda-time:2.9.7'
+    compile 'io.jsonwebtoken:jjwt:0.7.0'
 }
 
 apply from: '../config/style.gradle'
