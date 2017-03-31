@@ -57,6 +57,7 @@ import net.openid.appauth.browser.BrowserMatcher;
 import net.openid.appauth.browser.ExactBrowserMatcher;
 import net.openid.appauthdemo.BrowserSelectionAdapter.BrowserInfo;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -68,12 +69,15 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPublicKeySpec;
 import java.security.spec.X509EncodedKeySpec;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -90,6 +94,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Header;
 import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.Jwt;
+import io.jsonwebtoken.JwtParser;
 import io.jsonwebtoken.Jwts;
 
 /**
@@ -293,43 +298,63 @@ public final class LoginActivity extends AppCompatActivity {
         return new String(json);
     }
 
-    public static PublicKey getKey(String modulus_str, String exponent_str){
-        try{
-            BigInteger modulus = new BigInteger(1, Base64.decode(modulus_str, Base64.URL_SAFE));
-            BigInteger exponent = new BigInteger(1, Base64.decode(exponent_str, Base64.URL_SAFE));
-            RSAPublicKeySpec spec = new RSAPublicKeySpec(modulus, exponent);
-            KeyFactory factory = KeyFactory.getInstance("RSA");
-            PublicKey pub = factory.generatePublic(spec);
-            byte[] data = pub.getEncoded();
-            String base64encoded = new String(Base64.encode(data, Base64.NO_WRAP));
-            Log.d("FED", "Using public key:" + base64encoded);
+    public String parseHeader(String jwt) {
+        int i = jwt.indexOf('.');
+        String header = jwt.substring(0, i);
+        byte[] json = Base64.decode(header, Base64.DEFAULT);
+        return new String(json);
+    }
 
-            return pub;
-        }
-        catch(Exception e){
-            e.printStackTrace();
-        }
+    public static PublicKey getPublicKeyFromString(String modulus_str, String exponent_str) throws NoSuchAlgorithmException, InvalidKeySpecException {
+        BigInteger modulus = new BigInteger(1, Base64.decode(modulus_str, Base64.URL_SAFE));
+        BigInteger exponent = new BigInteger(1, Base64.decode(exponent_str, Base64.URL_SAFE));
+        RSAPublicKeySpec spec = new RSAPublicKeySpec(modulus, exponent);
+        KeyFactory factory = KeyFactory.getInstance("RSA");
+        return factory.generatePublic(spec);
+    }
 
+    private PublicKey getKeyFromKid(String kid, List<JSONObject> keys) throws JSONException, InvalidKeySpecException, NoSuchAlgorithmException {
+        for (JSONObject jwk: keys) {
+            if (jwk.getString("kid").equals(kid)) {
+                return getPublicKeyFromString(jwk.getString("n"), jwk.getString("e"));
+            }
+        }
         return null;
     }
 
-    private void verify_ms(String ms_jwt) throws JSONException{
+    private void verify_ms(String ms_jwt, List<JSONObject> keys) throws JSONException, InvalidKeySpecException, NoSuchAlgorithmException {
         Boolean result;
         String json_text = this.parseBody(ms_jwt);
-        JSONObject json = new JSONObject(json_text);
-        if (json.has("metadata_statements")) {
-            for (String sub_ms_jwt: json.getJSONArray("metadata_statements").values) {
-                verify_ms(sub_ms_jwt);
+        JSONObject ms = new JSONObject(json_text);
+        Log.d("FED", "Inspecting MS signed by: " + ms.getString("iss"));
+        Log.d("FED", "Keys: " + keys.size() + keys.toString());
+        if (ms.has("metadata_statements")) {
+            JSONArray statements = ms.getJSONArray("metadata_statements");
+            for (int i = 0; i < statements.length(); i++) {
+                verify_ms(statements.getString(i), keys);
             }
         }
-        Log.d("FED", "Validating token: " + ms_jwt);
-        Log.d("FED", "Validating signature of " + json.getString("iss"));
-        String body = Jwts.parser()
-            .setAllowedClockSkewSeconds(30000)
-            .setSigningKey(getKey("l7rt1yRvbiOKg8XeP_ICo0yDif-kOLWkUL5FAWKVWhWWAdnN2o1t_otuBX1xLeItE24he4qGHBzh2PQ4SRqau6ZVzx4-aJFzGZSbw6SswVXPlFR5dRkJMn4wxFOOVsSUnltO4K27X2Pf-gwlLFdH4q4QTNU5U8ijr76BnuUThdBYrxf2UQT7DDz6cPHaRdOUbuj_Ids9CmV6HyzdIFOfBx7DKS8o2fqH9Fa6-PKdMtDJiZ1KfjgstiNB04JAbQ1RI9Bl-No6NTUcZbD7Q0JF8iqY3Hogo9J_mL-SgQFGgwAoxQKoNeLk7uLHc69yIlyBJegrVkmHUKehIp3OZ5CW9w", "AQAB"))
-            .parseClaimsJws(ms_jwt)
-            .getBody().toString();
-        Log.d("FED", json.getString("iss") + " validated");
+        // This is where validation takes place
+        Log.d("FED", "Validating signature of " + ms.getString("iss"));
+        JSONObject header = new JSONObject(this.parseHeader(ms_jwt));
+        PublicKey signing_key = this.getKeyFromKid(header.getString("kid"), keys);
+        try {
+            JwtParser parser = Jwts.parser()
+                .setAllowedClockSkewSeconds(30000)
+                .setSigningKey(signing_key);
+            parser.parseClaimsJws(ms_jwt);
+            Log.d("FED", ms.getString("iss") + " validated");
+
+            // add keys to the list
+            JSONArray signing_keys = ms.getJSONArray("signing_keys");
+            for (int i = 0; i < signing_keys.length(); i++) {
+                JSONObject key = signing_keys.getJSONObject(i);
+                Log.d("FED", "Adding key " + key.getString("kid"));
+                keys.add(signing_keys.getJSONObject(i));
+            }
+        } catch(Exception exception) {
+            Log.d("FED", ms.getString("iss") + " failed:" + exception);
+        }
     }
 
     @MainThread
@@ -345,10 +370,23 @@ public final class LoginActivity extends AppCompatActivity {
         // if there are metadata statements, try to validate them first
         List<String> metadata_statements = config.discoveryDoc.getMetadataStatements();
         if (metadata_statements != null){
+            List<JSONObject> keys = new ArrayList<JSONObject>();
+            try {
+                keys.add(new JSONObject("{\n" +
+                    "    \"kty\": \"RSA\",\n" +
+                    "    \"kid\": \"https://edugain.org/\",\n" +
+                    "    \"n\": \"l7rt1yRvbiOKg8XeP_ICo0yDif-kOLWkUL5FAWKVWhWWAdnN2o1t_otuBX1xLeItE24he4qGHBzh2PQ4SRqau6ZVzx4-aJFzGZSbw6SswVXPlFR5dRkJMn4wxFOOVsSUnltO4K27X2Pf-gwlLFdH4q4QTNU5U8ijr76BnuUThdBYrxf2UQT7DDz6cPHaRdOUbuj_Ids9CmV6HyzdIFOfBx7DKS8o2fqH9Fa6-PKdMtDJiZ1KfjgstiNB04JAbQ1RI9Bl-No6NTUcZbD7Q0JF8iqY3Hogo9J_mL-SgQFGgwAoxQKoNeLk7uLHc69yIlyBJegrVkmHUKehIp3OZ5CW9w\",\n" +
+                    "    \"e\": \"AQAB\"\n" +
+                    "  }\n"));
+            } catch (JSONException exception) {
+                Log.d("FED", "Error creating KID" + exception);
+            }
+
             for (String statement: metadata_statements) {
                 Log.d("FED", "Metadata statement:" + statement);
                 try {
-                    this.verify_ms(statement);
+                    this.verify_ms(statement, keys);
+                    Log.d("FED", "MS was successfully validated and we have collected the following keys: " + keys.toString());
                 } catch (Exception exception){
                     Log.d("FED", "Error decoding JWT: " + exception);
                 }
