@@ -313,8 +313,9 @@ public final class LoginActivity extends AppCompatActivity {
         return factory.generatePublic(spec);
     }
 
-    private PublicKey getKeyFromKid(String kid, List<JSONObject> keys) throws JSONException, InvalidKeySpecException, NoSuchAlgorithmException {
-        for (JSONObject jwk: keys) {
+    private PublicKey getKeyFromKid(String kid, JSONArray keys) throws JSONException, InvalidKeySpecException, NoSuchAlgorithmException {
+        for (int i = 0; i < keys.length(); i++) {
+            JSONObject jwk = keys.getJSONObject(i);
             if (jwk.getString("kid").equals(kid)) {
                 return getPublicKeyFromString(jwk.getString("n"), jwk.getString("e"));
             }
@@ -322,12 +323,12 @@ public final class LoginActivity extends AppCompatActivity {
         return null;
     }
 
-    private void verify_ms(String ms_jwt, List<JSONObject> keys) throws JSONException, InvalidKeySpecException, NoSuchAlgorithmException {
+    private void verify_ms(String ms_jwt, JSONArray keys) throws JSONException, InvalidKeySpecException, NoSuchAlgorithmException {
         Boolean result;
         String json_text = this.parseBody(ms_jwt);
         JSONObject ms = new JSONObject(json_text);
         Log.d("FED", "Inspecting MS signed by: " + ms.getString("iss"));
-        Log.d("FED", "Keys: " + keys.size() + keys.toString());
+        Log.d("FED", "Keys: " + keys.length() + keys.toString(2));
         if (ms.has("metadata_statements")) {
             JSONArray statements = ms.getJSONArray("metadata_statements");
             for (int i = 0; i < statements.length(); i++) {
@@ -350,7 +351,7 @@ public final class LoginActivity extends AppCompatActivity {
             for (int i = 0; i < signing_keys.length(); i++) {
                 JSONObject key = signing_keys.getJSONObject(i);
                 Log.d("FED", "Adding key " + key.getString("kid"));
-                keys.add(signing_keys.getJSONObject(i));
+                keys.put(signing_keys.getJSONObject(i));
             }
         } catch(Exception exception) {
             Log.d("FED", ms.getString("iss") + " failed:" + exception);
@@ -370,9 +371,9 @@ public final class LoginActivity extends AppCompatActivity {
         // if there are metadata statements, try to validate them first
         List<String> metadata_statements = config.discoveryDoc.getMetadataStatements();
         if (metadata_statements != null){
-            List<JSONObject> keys = new ArrayList<JSONObject>();
+            JSONArray keys = new JSONArray();
             try {
-                keys.add(new JSONObject("{\n" +
+                keys.put(new JSONObject("{\n" +
                     "    \"kty\": \"RSA\",\n" +
                     "    \"kid\": \"https://edugain.org/\",\n" +
                     "    \"n\": \"l7rt1yRvbiOKg8XeP_ICo0yDif-kOLWkUL5FAWKVWhWWAdnN2o1t_otuBX1xLeItE24he4qGHBzh2PQ4SRqau6ZVzx4-aJFzGZSbw6SswVXPlFR5dRkJMn4wxFOOVsSUnltO4K27X2Pf-gwlLFdH4q4QTNU5U8ijr76BnuUThdBYrxf2UQT7DDz6cPHaRdOUbuj_Ids9CmV6HyzdIFOfBx7DKS8o2fqH9Fa6-PKdMtDJiZ1KfjgstiNB04JAbQ1RI9Bl-No6NTUcZbD7Q0JF8iqY3Hogo9J_mL-SgQFGgwAoxQKoNeLk7uLHc69yIlyBJegrVkmHUKehIp3OZ5CW9w\",\n" +
@@ -386,7 +387,7 @@ public final class LoginActivity extends AppCompatActivity {
                 Log.d("FED", "Metadata statement:" + statement);
                 try {
                     this.verify_ms(statement, keys);
-                    Log.d("FED", "MS was successfully validated and we have collected the following keys: " + keys.toString());
+                    Log.d("FED", "MS was successfully validated and we have collected the following keys: " + keys.toString(2));
                 } catch (Exception exception){
                     Log.d("FED", "Error decoding JWT: " + exception);
                 }
