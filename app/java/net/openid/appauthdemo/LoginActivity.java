@@ -313,7 +313,6 @@ public final class LoginActivity extends AppCompatActivity {
         String json_text = this.parseBody(ms_jwt);
         JSONObject ms = new JSONObject(json_text);
         Log.d("FED", "Inspecting MS signed by: " + ms.getString("iss"));
-        Log.d("FED", "Keys: " + keys.length() + " " + keys.toString(2));
         if (ms.has("metadata_statements")) {
             JSONArray statements = ms.getJSONArray("metadata_statements");
             for (int i = 0; i < statements.length(); i++) {
@@ -326,7 +325,7 @@ public final class LoginActivity extends AppCompatActivity {
         PublicKey signing_key = this.getKeyFromKid(header.getString("kid"), keys);
         try {
             JwtParser parser = Jwts.parser()
-                .setAllowedClockSkewSeconds(30000)
+                .setAllowedClockSkewSeconds(300000000) // THIS SHOULD NOT BE DONE THIS WAY
                 .setSigningKey(signing_key);
             parser.parseClaimsJws(ms_jwt);
             Log.d("FED", ms.getString("iss") + " validated");
@@ -338,6 +337,7 @@ public final class LoginActivity extends AppCompatActivity {
                 Log.d("FED", "Adding key " + key.getString("kid"));
                 keys.put(signing_keys.getJSONObject(i));
             }
+            Log.d("FED", "Keys: " + keys.length() + " " + keys.toString(2));
         } catch(Exception exception) {
             Log.d("FED", ms.getString("iss") + " failed:" + exception);
             return false;
