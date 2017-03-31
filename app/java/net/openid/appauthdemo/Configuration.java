@@ -197,6 +197,8 @@ public final class Configuration {
         mRedirectUri = getRequiredConfigUri("redirect_uri");
 
         mAuthorizedKeys = mConfigJson.optJSONArray("authorized_keys");
+        if (mAuthorizedKeys == null)
+            mAuthorizedKeys = new JSONArray();
 
         if (!isRedirectUriRegistered()) {
             throw new InvalidConfigurationException(
