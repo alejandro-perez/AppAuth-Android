@@ -27,6 +27,7 @@ import android.support.annotation.WorkerThread;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
+import android.util.Base64;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
@@ -50,11 +51,22 @@ import net.openid.appauth.browser.BrowserMatcher;
 import net.openid.appauth.browser.ExactBrowserMatcher;
 import net.openid.appauthdemo.BrowserSelectionAdapter.BrowserInfo;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.math.BigInteger;
+import java.security.Key;
+import java.security.KeyFactory;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.security.spec.RSAPublicKeySpec;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
@@ -65,6 +77,12 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
+
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Header;
+import io.jsonwebtoken.Jws;
+import io.jsonwebtoken.Jwt;
+import io.jsonwebtoken.Jwts;
 
 /**
  * Demonstrates the usage of the AppAuth to authorize a user with an OAuth2 / OpenID Connect
@@ -253,6 +271,53 @@ public final class LoginActivity extends AppCompatActivity {
                 mConfiguration.getConnectionBuilder());
     }
 
+    public String parseBody(String jwt) {
+        int i = jwt.indexOf('.');
+        int j = jwt.lastIndexOf('.');
+        String body = jwt.substring(i, j);
+        byte[] json = Base64.decode(body, Base64.DEFAULT);
+        return new String(json);
+    }
+
+    public static PublicKey getKey(String modulus_str, String exponent_str){
+        try{
+            BigInteger modulus = new BigInteger(1, Base64.decode(modulus_str, Base64.URL_SAFE));
+            BigInteger exponent = new BigInteger(1, Base64.decode(exponent_str, Base64.URL_SAFE));
+            RSAPublicKeySpec spec = new RSAPublicKeySpec(modulus, exponent);
+            KeyFactory factory = KeyFactory.getInstance("RSA");
+            PublicKey pub = factory.generatePublic(spec);
+            byte[] data = pub.getEncoded();
+            String base64encoded = new String(Base64.encode(data, Base64.NO_WRAP));
+            Log.d("FED", "Using public key:" + base64encoded);
+
+            return pub;
+        }
+        catch(Exception e){
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+
+    private void verify_ms(String ms_jwt) throws JSONException{
+        Boolean result;
+        String json_text = this.parseBody(ms_jwt);
+        JSONObject json = new JSONObject(json_text);
+        if (json.has("metadata_statements")) {
+            for (String sub_ms_jwt: json.getJSONArray("metadata_statements").values) {
+                verify_ms(sub_ms_jwt);
+            }
+        }
+        Log.d("FED", "Validating token: " + ms_jwt);
+        Log.d("FED", "Validating signature of " + json.getString("iss"));
+        String body = Jwts.parser()
+            .setAllowedClockSkewSeconds(30000)
+            .setSigningKey(getKey("l7rt1yRvbiOKg8XeP_ICo0yDif-kOLWkUL5FAWKVWhWWAdnN2o1t_otuBX1xLeItE24he4qGHBzh2PQ4SRqau6ZVzx4-aJFzGZSbw6SswVXPlFR5dRkJMn4wxFOOVsSUnltO4K27X2Pf-gwlLFdH4q4QTNU5U8ijr76BnuUThdBYrxf2UQT7DDz6cPHaRdOUbuj_Ids9CmV6HyzdIFOfBx7DKS8o2fqH9Fa6-PKdMtDJiZ1KfjgstiNB04JAbQ1RI9Bl-No6NTUcZbD7Q0JF8iqY3Hogo9J_mL-SgQFGgwAoxQKoNeLk7uLHc69yIlyBJegrVkmHUKehIp3OZ5CW9w", "AQAB"))
+            .parseClaimsJws(ms_jwt)
+            .getBody().toString();
+        Log.d("FED", json.getString("iss") + " validated");
+    }
+
     @MainThread
     private void handleConfigurationRetrievalResult(
             AuthorizationServiceConfiguration config, AuthorizationException ex) {
@@ -260,6 +325,21 @@ public final class LoginActivity extends AppCompatActivity {
             displayError("Failed to retrieve discovery document: " + ex.getMessage(), true);
             return;
         }
+
+        // if there are metadata statements, try to validate them first
+        List<String> metadata_statements = config.discoveryDoc.getMetadataStatements();
+        if (metadata_statements != null){
+            for (String statement: metadata_statements) {
+                Log.d("FED", "Metadata statement:" + statement);
+                try {
+                    this.verify_ms(statement);
+                } catch (Exception exception){
+                    Log.d("FED", "Error decoding JWT: " + exception);
+                }
+
+            }
+        }
+
 
         mAuthStateManager.replace(new AuthState(config));
         mExecutor.submit(this::initializeClient);
