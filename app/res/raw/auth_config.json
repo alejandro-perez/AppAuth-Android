@@ -2,24 +2,28 @@
   "client_id": "",
   "redirect_uri": "net.openid.appauthdemo:/oauth2redirect",
   "authorization_scope": "openid email profile",
-  "discovery_uri": "http://alex.inf.um.es:8000/.wellknown/openid-configuration",
+  "discovery_uri": "https://agaton-sax.com:8080/android/rp-sms-mutiple-l1/.well-known/openid-configuration",
   "authorization_endpoint_uri": "",
   "token_endpoint_uri": "",
   "registration_endpoint_uri": "",
   "https_required": false,
-  "authorized_keys": [
-    {
-      "kty": "RSA",
-      "kid": "https://edugain.org/",
-      "n": "l7rt1yRvbiOKg8XeP_ICo0yDif-kOLWkUL5FAWKVWhWWAdnN2o1t_otuBX1xLeItE24he4qGHBzh2PQ4SRqau6ZVzx4-aJFzGZSbw6SswVXPlFR5dRkJMn4wxFOOVsSUnltO4K27X2Pf-gwlLFdH4q4QTNU5U8ijr76BnuUThdBYrxf2UQT7DDz6cPHaRdOUbuj_Ids9CmV6HyzdIFOfBx7DKS8o2fqH9Fa6-PKdMtDJiZ1KfjgstiNB04JAbQ1RI9Bl-No6NTUcZbD7Q0JF8iqY3Hogo9J_mL-SgQFGgwAoxQKoNeLk7uLHc69yIlyBJegrVkmHUKehIp3OZ5CW9w",
-      "e": "AQAB"
-    },
-    {
-      "kty": "RSA",
-      "kid": "https://kalmar.org/",
-      "n": "pO4fh3R8yBPjjpA1keMg2nDCD7PaDraqK5Wn4O8J_rtFgg_Beh1UQf6Y1yyVOkPDgk9zIvxtBLHA7_AHiEvC0_pHSzJNlppVhujUh8yVJrxaYDqwIM1h4J8xoqhkPjELkGX4_jOrQ3DUTXSk0BkGeeyxX8n-i7uRA8UGCyZ-74WxCQK4pK-0nFi_60pXX87bypsTxxtXP2AwE_WAlH_7wiShz5uyyYMGRxe5TxEo3NZuyMplz1KOnpU4YEUAofvjfafjrFSgvUpbVa4WXeoWkbV2S_fIL5sa3EEKO7qKmTHhwxNcCvxnlQBxKN8ZzUlRD0nzmCAuEZVBg2QIWjfPHQ",
-      "e": "AQAB"
-    }
-  ]
-
+  "authorized_keys": {
+    "https://swamid.sunet.se": [
+      {
+        "n": "vxhdGPRS3dC-RAH1nt-jt933bbKfa0gnAoOAKQ5dtTsl9F9_5FNazkxsixfu0AGwQnsjQz4zPYbhmiQpP0cBhlNY8Q_sE2FV9yISfRyEtMoDGk9d0IQx6pG8_-fT8vUIp53lWnnVCr1Sc-bTO7Fe7E39TPkzh4eJHHRjzj2aT6oG5U8eCcw7h702SEB-9Z3dneGnRc1W4KDo_PXkkiAmh2zuLsGqXv0YEg_16pVEIJ0IPIVdfkKW1S9GsViNBzBsKEhPFjGcge75WocGz0QSulmGfRLg53c8XpdE7LCaydsakyiefSlH8srEq9xucDpPpfmbe9KEWM75NuUjvpbzQw",
+        "e": "AQAB",
+        "use": "sig",
+        "kid": "R3wo1d6yCqLEW-OWF7oLA0korje6cmcUx5_FDLZ8ntw",
+        "kty": "RSA"
+      },
+      {
+        "crv": "P-256",
+        "kid": "zDluHDw3Fgxg42IbThdyf8M8FrLkdL8mPtrGTWU5yn4",
+       "x": "_yXLDItMx7KxxZugSHE6Wbi6WfnJcaEXruDopmLX_3g",
+        "y": "Y1FURfwR3ybyPdy-b-X6Po9b4m5393EjAuirZW8ZGfw",
+        "use": "sig",
+        "kty": "EC"
+      }
+    ]
+  }
 }

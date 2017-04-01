@@ -299,20 +299,23 @@ public final class LoginActivity extends AppCompatActivity {
         return factory.generatePublic(spec);
     }
 
-    private PublicKey getKeyFromKid(String kid, JSONArray keys) throws JSONException, InvalidKeySpecException, NoSuchAlgorithmException {
-        for (int i = 0; i < keys.length(); i++) {
-            JSONObject jwk = keys.getJSONObject(i);
-            if (jwk.getString("kid").equals(kid)) {
-                return getPublicKeyFromString(jwk.getString("n"), jwk.getString("e"));
+    private PublicKey getKeyFromKidIss(String kid, String iss, JSONObject keys) throws JSONException, InvalidKeySpecException, NoSuchAlgorithmException {
+        if (keys.has(iss)){
+            JSONArray iss_keys = keys.getJSONArray(iss);
+            for (int i = 0; i < iss_keys.length(); i++) {
+                JSONObject jwk = iss_keys.getJSONObject(i);
+                if (jwk.getString("kid").equals(kid)) {
+                    return getPublicKeyFromString(jwk.getString("n"), jwk.getString("e"));
+                }
             }
         }
         return null;
     }
 
-    private Boolean verify_ms(String ms_jwt, JSONArray keys) throws JSONException, InvalidKeySpecException, NoSuchAlgorithmException {
+    private Boolean verify_ms(String ms_jwt, JSONObject keys) throws JSONException, InvalidKeySpecException, NoSuchAlgorithmException {
         String json_text = this.parseBody(ms_jwt);
         JSONObject ms = new JSONObject(json_text);
-        Log.d("FED", "Inspecting MS signed by: " + ms.getString("iss"));
+        Log.d("FED", "Inspecting MS for " + ms.getString("issuer") + " signed by: " + ms.getString("iss"));
         if (ms.has("metadata_statements")) {
             JSONArray statements = ms.getJSONArray("metadata_statements");
             for (int i = 0; i < statements.length(); i++) {
@@ -322,7 +325,7 @@ public final class LoginActivity extends AppCompatActivity {
         // This is where validation takes place
         Log.d("FED", "Validating signature of " + ms.getString("iss"));
         JSONObject header = new JSONObject(this.parseHeader(ms_jwt));
-        PublicKey signing_key = this.getKeyFromKid(header.getString("kid"), keys);
+        PublicKey signing_key = this.getKeyFromKidIss(header.getString("kid"), ms.getString("iss"), keys);
         try {
             JwtParser parser = Jwts.parser()
                 .setAllowedClockSkewSeconds(300000000) // THIS SHOULD NOT BE DONE THIS WAY
@@ -331,11 +334,17 @@ public final class LoginActivity extends AppCompatActivity {
             Log.d("FED", ms.getString("iss") + " validated");
 
             // add keys to the list
-            JSONArray signing_keys = ms.getJSONArray("signing_keys");
-            for (int i = 0; i < signing_keys.length(); i++) {
-                JSONObject key = signing_keys.getJSONObject(i);
-                Log.d("FED", "Adding key " + key.getString("kid"));
-                keys.put(signing_keys.getJSONObject(i));
+            if (ms.has("signing_keys")) {
+                JSONArray signing_keys = ms.getJSONObject("signing_keys")
+                                            .getJSONArray("keys");
+                keys.put(ms.getString("issuer"), signing_keys);
+/*
+                for (int i = 0; i < signing_keys.length(); i++) {
+                    JSONObject key = signing_keys.getJSONObject(i);
+                    Log.d("FED", "Adding key " + key.getString("kid"));
+                    keys.getJSONArray(ms.getString("issuer")).put(signing_keys.getJSONObject(i));
+                }
+*/
             }
             Log.d("FED", "Keys: " + keys.length() + " " + keys.toString(2));
         } catch(Exception exception) {
@@ -356,7 +365,7 @@ public final class LoginActivity extends AppCompatActivity {
         // if there are metadata statements, try to validate them first
         List<String> metadata_statements = config.discoveryDoc.getMetadataStatements();
         if (metadata_statements != null){
-            JSONArray keys = mConfiguration.getAuthorizedKeys();
+            JSONObject keys = mConfiguration.getAuthorizedKeys();
             for (String statement: metadata_statements) {
                 try {
                     if (this.verify_ms(statement, keys))
