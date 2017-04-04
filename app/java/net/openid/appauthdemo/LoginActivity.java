@@ -36,6 +36,14 @@ import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.TextView;
 
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JWSObject;
+import com.nimbusds.jose.JWSVerifier;
+import com.nimbusds.jose.crypto.RSASSAVerifier;
+import com.nimbusds.jose.jwk.JWK;
+import com.nimbusds.jose.jwk.JWKSet;
+import com.nimbusds.jose.jwk.RSAKey;
+
 import net.openid.appauth.AppAuthConfiguration;
 import net.openid.appauth.AuthState;
 import net.openid.appauth.AuthorizationException;
@@ -66,6 +74,7 @@ import java.security.cert.X509Certificate;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPublicKeySpec;
 import java.security.spec.X509EncodedKeySpec;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -312,46 +321,55 @@ public final class LoginActivity extends AppCompatActivity {
         return null;
     }
 
-    private Boolean verify_ms(String ms_jwt, JSONObject keys) throws JSONException, InvalidKeySpecException, NoSuchAlgorithmException {
-        String json_text = this.parseBody(ms_jwt);
-        JSONObject ms = new JSONObject(json_text);
-        Log.d("FED", "Inspecting MS for " + ms.getString("issuer") + " signed by: " + ms.getString("iss"));
-        if (ms.has("metadata_statements")) {
-            JSONArray statements = ms.getJSONArray("metadata_statements");
+    private JSONObject verify_ms(String ms_jwt, List<JWK> root_keys) throws JSONException, InvalidKeySpecException, NoSuchAlgorithmException {
+        List<JWK> keys = new ArrayList<JWK>();
+        String payload_text = this.parseBody(ms_jwt);
+        JSONObject pl = new JSONObject(payload_text);
+        Log.d("FED", "Inspecting MS for signed by: " + pl.getString("iss"));
+        if (pl.has("metadata_statements")) {
+            JSONArray msl = new JSONArray();
+            JSONArray statements = pl.getJSONArray("metadata_statements");
             for (int i = 0; i < statements.length(); i++) {
-                verify_ms(statements.getString(i), keys);
-            }
-        }
-        // This is where validation takes place
-        Log.d("FED", "Validating signature of " + ms.getString("iss"));
-        JSONObject header = new JSONObject(this.parseHeader(ms_jwt));
-        PublicKey signing_key = this.getKeyFromKidIss(header.getString("kid"), ms.getString("iss"), keys);
-        try {
-            JwtParser parser = Jwts.parser()
-                .setAllowedClockSkewSeconds(300000000) // THIS SHOULD NOT BE DONE THIS WAY
-                .setSigningKey(signing_key);
-            parser.parseClaimsJws(ms_jwt);
-            Log.d("FED", ms.getString("iss") + " validated");
-
-            // add keys to the list
-            if (ms.has("signing_keys")) {
-                JSONArray signing_keys = ms.getJSONObject("signing_keys")
-                                            .getJSONArray("keys");
-                keys.put(ms.getString("issuer"), signing_keys);
-/*
-                for (int i = 0; i < signing_keys.length(); i++) {
-                    JSONObject key = signing_keys.getJSONObject(i);
-                    Log.d("FED", "Adding key " + key.getString("kid"));
-                    keys.getJSONArray(ms.getString("issuer")).put(signing_keys.getJSONObject(i));
+                JSONObject _ms = verify_ms(statements.getString(i), root_keys);
+                if (_ms != null){
+                    JSONArray signing_keys = _ms.getJSONObject("signing_keys").getJSONArray("keys");
+                    for (int j = 0; j < signing_keys.length(); j++) {
+                        JWK key = null;
+                        try {
+                            key = JWK.parse(signing_keys.getJSONObject(j).toString());
+                        } catch (ParseException e) {
+                            Log.d("FED", "ERror parsing signing key" + e.toString());
+                            e.printStackTrace();
+                            return null;
+                        }
+                        keys.add(key);
+                        msl.put(_ms);
+                    }
                 }
-*/
+                pl.put("metadata_statements", msl);
             }
-            Log.d("FED", "Keys: " + keys.length() + " " + keys.toString(2));
-        } catch(Exception exception) {
-            Log.d("FED", ms.getString("iss") + " failed:" + exception);
-            return false;
         }
-        return true;
+        else {
+            keys = root_keys;
+        }
+
+        // This is where validation takes place
+        Log.d("FED", "Validating signature of " + pl.getString("iss"));
+        try {
+            JSONObject header = new JSONObject(this.parseHeader(ms_jwt));
+            JWKSet aaa = new JWKSet(keys);
+            RSAKey rsa_key = RSAKey.parse(aaa.getKeyByKeyId(header.getString("kid")).toJSONObject());
+            JWSObject jwsObject = JWSObject.parse(ms_jwt);
+            JWSVerifier verifier = new RSASSAVerifier(rsa_key.toRSAPublicKey());
+            if (jwsObject.verify(verifier))
+                Log.d("FED", "In RSA we trust!" + jwsObject.getPayload().toString());
+            return pl;
+        } catch (Exception e) {
+            Log.d("FED", "Error validating signature " + e.toString());
+            e.printStackTrace();
+
+        }
+        return null;
     }
 
     @MainThread
@@ -365,15 +383,21 @@ public final class LoginActivity extends AppCompatActivity {
         // if there are metadata statements, try to validate them first
         List<String> metadata_statements = config.discoveryDoc.getMetadataStatements();
         if (metadata_statements != null){
-            JSONObject keys = mConfiguration.getAuthorizedKeys();
+            JSONArray keys = mConfiguration.getAuthorizedKeys();
             for (String statement: metadata_statements) {
                 try {
-                    if (this.verify_ms(statement, keys))
+                    List<JWK> root_keys = new ArrayList<JWK>();
+                    for (int i=0; i < keys.length(); i++) {
+                        JSONObject key = keys.getJSONObject(i);
+                        root_keys.add(JWK.parse(key.toString()));
+                    }
+                    if (this.verify_ms(statement, root_keys) != null)
                         Log.d("FED", "MS was successfully validated and we have collected the following keys: " + keys.toString(2));
                     else
                         Log.d("FED", "MS could not be validated having the following keys: " + keys.toString(2));
                 } catch (Exception exception){
                     Log.d("FED", "Error decoding JWT: " + exception);
+                    exception.printStackTrace();
                 }
 
             }
