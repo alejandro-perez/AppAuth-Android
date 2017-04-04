@@ -2,28 +2,26 @@
   "client_id": "",
   "redirect_uri": "net.openid.appauthdemo:/oauth2redirect",
   "authorization_scope": "openid email profile",
-  "discovery_uri": "https://agaton-sax.com:8080/android/rp-sms-mutiple-l1/.well-known/openid-configuration",
+  "discovery_uri": "https://agaton-sax.com:8080/android/rp-sms-single-l2/.well-known/openid-configuration",
   "authorization_endpoint_uri": "",
   "token_endpoint_uri": "",
   "registration_endpoint_uri": "",
   "https_required": false,
-  "authorized_keys": {
-    "https://swamid.sunet.se": [
-      {
-        "n": "vxhdGPRS3dC-RAH1nt-jt933bbKfa0gnAoOAKQ5dtTsl9F9_5FNazkxsixfu0AGwQnsjQz4zPYbhmiQpP0cBhlNY8Q_sE2FV9yISfRyEtMoDGk9d0IQx6pG8_-fT8vUIp53lWnnVCr1Sc-bTO7Fe7E39TPkzh4eJHHRjzj2aT6oG5U8eCcw7h702SEB-9Z3dneGnRc1W4KDo_PXkkiAmh2zuLsGqXv0YEg_16pVEIJ0IPIVdfkKW1S9GsViNBzBsKEhPFjGcge75WocGz0QSulmGfRLg53c8XpdE7LCaydsakyiefSlH8srEq9xucDpPpfmbe9KEWM75NuUjvpbzQw",
-        "e": "AQAB",
-        "use": "sig",
-        "kid": "R3wo1d6yCqLEW-OWF7oLA0korje6cmcUx5_FDLZ8ntw",
-        "kty": "RSA"
-      },
-      {
-        "crv": "P-256",
-        "kid": "zDluHDw3Fgxg42IbThdyf8M8FrLkdL8mPtrGTWU5yn4",
-       "x": "_yXLDItMx7KxxZugSHE6Wbi6WfnJcaEXruDopmLX_3g",
-        "y": "Y1FURfwR3ybyPdy-b-X6Po9b4m5393EjAuirZW8ZGfw",
-        "use": "sig",
-        "kty": "EC"
-      }
-    ]
-  }
+  "authorized_keys": [
+    {
+      "e": "AQAB",
+      "kid": "rtxKspV16amoI4xgoG8KfpEj0_fK0g12UVwjqQRJTBA",
+      "kty": "RSA",
+      "n": "vUcGBYUJtBICLncZfIwkMbsXZmomhcWC38znocxmcWyGaghfR5xVI8DIkC2bG-ToSQZB8MuITORFYwoO_pwvdkZaS3mJwFe7XRtcYJpdCQbe-wm2jaZ6Uy09rbLzErHuxky19eYmo7KQHJvV8NxHG0oH7vJAJQ6Los9E5CNJNzDpHYQhrDlBadwxc-B4gNgg7PePAYBoIWBved65kZrUcc-T7nCwzBH5HUPbj8cLfgIrKHn9cIUcSbYSCSxK1N7CtdZKdq9647OcdQAc_q0c2c5_SlQa16-2vJ4gFIGx6tNpXEGH8VNGXIYejX-zVM0Sh7TNBa1c-JRHuzrL6Sv15w",
+      "use": "sig"
+    },
+    {
+      "use": "sig",
+      "y": "GS_oCfFkdvBdPD5-upMhTQQsNj0epneXTJYfxXEM0U4",
+      "crv": "P-256",
+      "kid": "eWjhO3Zn3gHOqrmU2xswER-orn_hL4N7InTBmAA4iQU",
+      "x": "k4I4YOAZ2_BLBysJd28Axv2WpPTfJpAD-lqJ8B-j6Og",
+      "kty": "EC"
+    }
+  ]
 }

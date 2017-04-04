@@ -69,7 +69,7 @@ public final class Configuration {
     private Uri mRegistrationEndpointUri;
     private boolean mHttpsRequired;
 
-    private JSONObject mAuthorizedKeys;
+    private JSONArray mAuthorizedKeys;
 
     public static Configuration getInstance(Context context) {
         Configuration config = sInstance.get();
@@ -163,7 +163,7 @@ public final class Configuration {
         return mHttpsRequired;
     }
 
-    public JSONObject getAuthorizedKeys() { return mAuthorizedKeys;}
+    public JSONArray getAuthorizedKeys() { return mAuthorizedKeys;}
 
     public ConnectionBuilder getConnectionBuilder() {
         if (isHttpsRequired()) {
@@ -196,9 +196,9 @@ public final class Configuration {
         mScope = getRequiredConfigString("authorization_scope");
         mRedirectUri = getRequiredConfigUri("redirect_uri");
 
-        mAuthorizedKeys = mConfigJson.optJSONObject("authorized_keys");
+        mAuthorizedKeys = mConfigJson.optJSONArray("authorized_keys");
         if (mAuthorizedKeys == null)
-            mAuthorizedKeys = new JSONObject();
+            mAuthorizedKeys = new JSONArray();
 
         if (!isRedirectUriRegistered()) {
             throw new InvalidConfigurationException(
