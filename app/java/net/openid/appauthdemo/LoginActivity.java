@@ -27,7 +27,6 @@ import android.support.annotation.WorkerThread;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
-import android.util.Base64;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
@@ -37,13 +36,24 @@ import android.widget.Spinner;
 import android.widget.TextView;
 
 import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.JWSObject;
+import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSVerifier;
 import com.nimbusds.jose.crypto.RSASSAVerifier;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
+import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
+import com.nimbusds.jose.proc.BadJOSEException;
+import com.nimbusds.jose.proc.JWSKeySelector;
+import com.nimbusds.jose.proc.JWSVerificationKeySelector;
+import com.nimbusds.jose.util.JSONObjectUtils;
+import com.nimbusds.jwt.SignedJWT;
+import com.nimbusds.jwt.proc.ConfigurableJWTProcessor;
+import com.nimbusds.jwt.proc.DefaultJWTClaimsVerifier;
+import com.nimbusds.jwt.proc.DefaultJWTProcessor;
+import com.nimbusds.jwt.proc.JWTClaimsSetVerifier;
 
+import net.minidev.json.JSONUtil;
 import net.openid.appauth.AppAuthConfiguration;
 import net.openid.appauth.AuthState;
 import net.openid.appauth.AuthorizationException;
@@ -63,24 +73,14 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.math.BigInteger;
-import java.security.InvalidKeyException;
-import java.security.Key;
-import java.security.KeyFactory;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
-import java.security.PublicKey;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.RSAPublicKeySpec;
-import java.security.spec.X509EncodedKeySpec;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
@@ -91,13 +91,6 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
-
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Header;
-import io.jsonwebtoken.Jws;
-import io.jsonwebtoken.Jwt;
-import io.jsonwebtoken.JwtParser;
-import io.jsonwebtoken.Jwts;
 
 /**
  * Demonstrates the usage of the AppAuth to authorize a user with an OAuth2 / OpenID Connect
@@ -285,48 +278,46 @@ public final class LoginActivity extends AppCompatActivity {
                 this::handleConfigurationRetrievalResult,
                 mConfiguration.getConnectionBuilder());
     }
-
+    
     private JSONObject verify_ms(String ms_jwt, List<JWK> root_keys) {
-        List<JWK> keys = new ArrayList<JWK>();
         try {
-            JWSObject jwsObject = JWSObject.parse(ms_jwt);
-            JSONObject pl = new JSONObject(jwsObject.getPayload().toString());
-            Log.d("FED", "Inspecting MS for signed by: " + pl.getString("iss"));
-            if (pl.has("metadata_statements")) {
-                JSONArray msl = new JSONArray();
-                JSONArray statements = pl.getJSONArray("metadata_statements");
-                Log.d("FED", "Has " + statements.length() + "St.");
+            List<JWK> keys = new ArrayList<JWK>();
+            SignedJWT signedJWT = SignedJWT.parse(ms_jwt);
+            // convert nimbus JSON object to org.json.JSONObject for simpler processing
+            JSONObject payload = new JSONObject(signedJWT.getPayload().toString());
+            Log.d("FED", "Inspecting MS signed by: " + payload.getString("iss") + " with KID:" + signedJWT.getHeader().getKeyID());
+            if (payload.has("metadata_statements")) {
+                JSONArray statements = payload.getJSONArray("metadata_statements");
+                JSONArray flattened_msl = new JSONArray();  // list of flattened statements
                 for (int i = 0; i < statements.length(); i++) {
-                    JSONObject _ms = verify_ms(statements.getString(i), root_keys);
-                    if (_ms != null){
-                        msl.put(_ms);
-                        JSONArray signing_keys = _ms.getJSONObject("signing_keys").getJSONArray("keys");
+                    JSONObject sub_ms = verify_ms(statements.getString(i), root_keys);
+                    if (sub_ms != null){
+                        flattened_msl.put(sub_ms);
+                        JSONArray signing_keys = sub_ms.getJSONObject("signing_keys").getJSONArray("keys");
                         for (int j = 0; j < signing_keys.length(); j++) {
                             JWK key = JWK.parse(signing_keys.getJSONObject(j).toString());
                             keys.add(key);
                         }
                     }
                 }
-                pl.put("metadata_statements", msl);
+                payload.put("metadata_statements", flattened_msl);
             }
             else {
                 keys = root_keys;
             }
             // This is where validation takes place
-            Log.d("FED", "Validating signature of " + pl.getString("iss"));
-            for (JWK key: keys){
-                if (key.getKeyID().equals(jwsObject.getHeader().getKeyID())){
-                    RSAKey rsa_key = RSAKey.parse(key.toJSONObject());
-                    JWSVerifier verifier = new RSASSAVerifier(rsa_key.toRSAPublicKey());
-                    if (jwsObject.verify(verifier)) {
-                        Log.d("FED", "Validation successful!");
-                        return pl;
-                    }
-                }
-            }
-            Log.d("FED", "Could not find an authorized key.");
-            return null;
-        } catch (JOSEException | NoSuchAlgorithmException | JSONException | ParseException | InvalidKeySpecException e) {
+            ConfigurableJWTProcessor jwtProcessor = new DefaultJWTProcessor();
+            JWSKeySelector keySelector = new JWSVerificationKeySelector(
+                JWSAlgorithm.RS256,
+                new ImmutableJWKSet(new JWKSet(keys)));
+            DefaultJWTClaimsVerifier cverifier = new DefaultJWTClaimsVerifier();
+            cverifier.setMaxClockSkew(500000000);
+            jwtProcessor.setJWTClaimsSetVerifier(cverifier);
+            jwtProcessor.setJWSKeySelector(keySelector);
+            jwtProcessor.process(ms_jwt, null);
+            Log.d("FED", "Successful validation of signature of " + payload.getString("iss") + " with KID:" + signedJWT.getHeader().getKeyID());
+            return payload;
+        } catch (JOSEException | JSONException | ParseException | BadJOSEException e) {
             Log.d("FED", "Error validating MS." + e.toString());
             e.printStackTrace();
             return null;
@@ -357,12 +348,14 @@ public final class LoginActivity extends AppCompatActivity {
                     }
                 }
                 JSONObject ms = this.verify_ms(statement, root_keys);
-                if (ms != null)
+                if (ms != null) {
                     try {
+                        Log.d("FED", "Validation of compounded MS successful!");
                         System.out.println(ms.toString(4));
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
+                }
                 else
                     Log.d("FED", "MS could not be validated");
 
