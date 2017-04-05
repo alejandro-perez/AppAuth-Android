@@ -10,6 +10,7 @@
   "authorized_keys": {
     "keys": [
       {
+        "iss": "https://edugain.com",
         "e": "AQAB",
         "kid": "rtxKspV16amoI4xgoG8KfpEj0_fK0g12UVwjqQRJTBA",
         "kty": "RSA",
@@ -17,27 +18,12 @@
         "use": "sig"
       },
       {
-        "use": "sig",
-        "y": "GS_oCfFkdvBdPD5-upMhTQQsNj0epneXTJYfxXEM0U4",
-        "crv": "P-256",
-        "kid": "eWjhO3Zn3gHOqrmU2xswER-orn_hL4N7InTBmAA4iQU",
-        "x": "k4I4YOAZ2_BLBysJd28Axv2WpPTfJpAD-lqJ8B-j6Og",
-        "kty": "EC"
-      },
-      {
+        "iss": "https://swamid.sunet.se",
         "e": "AQAB",
         "kid": "R3wo1d6yCqLEW-OWF7oLA0korje6cmcUx5_FDLZ8ntw",
         "kty": "RSA",
         "n": "vxhdGPRS3dC-RAH1nt-jt933bbKfa0gnAoOAKQ5dtTsl9F9_5FNazkxsixfu0AGwQnsjQz4zPYbhmiQpP0cBhlNY8Q_sE2FV9yISfRyEtMoDGk9d0IQx6pG8_-fT8vUIp53lWnnVCr1Sc-bTO7Fe7E39TPkzh4eJHHRjzj2aT6oG5U8eCcw7h702SEB-9Z3dneGnRc1W4KDo_PXkkiAmh2zuLsGqXv0YEg_16pVEIJ0IPIVdfkKW1S9GsViNBzBsKEhPFjGcge75WocGz0QSulmGfRLg53c8XpdE7LCaydsakyiefSlH8srEq9xucDpPpfmbe9KEWM75NuUjvpbzQw",
         "use": "sig"
-      },
-      {
-        "use": "sig",
-        "y": "AjIYoYGZDJ-dCyoFNryM1cj-9lPMsDLlyHzzUeTgAls",
-        "crv": "P-256",
-        "kid": "qI4bXAE4oGAdYxY77iGCgkbBY66-Fq24g6Jy54yPl9w",
-        "x": "fLpFdRabQqiZR4uxhCkgyW45H5UshIR0FksJkyfcVDQ",
-        "kty": "EC"
       }
     ]
   }
