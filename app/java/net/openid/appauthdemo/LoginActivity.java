@@ -308,7 +308,7 @@ public final class LoginActivity extends AppCompatActivity {
             // This is where validation takes place
             ConfigurableJWTProcessor jwtProcessor = new DefaultJWTProcessor();
             JWSKeySelector keySelector = new JWSVerificationKeySelector(
-                JWSAlgorithm.RS256,
+                signedJWT.getHeader().getAlgorithm(),
                 new ImmutableJWKSet(new JWKSet(keys)));
             DefaultJWTClaimsVerifier cverifier = new DefaultJWTClaimsVerifier();
             cverifier.setMaxClockSkew(500000000);
