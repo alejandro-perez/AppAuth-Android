@@ -313,16 +313,15 @@ public final class LoginActivity extends AppCompatActivity {
                 for (int i = 0; i < statements.length(); i++) {
                     JSONObject _ms = verify_ms(statements.getString(i), root_keys);
                     if (_ms != null){
+                        msl.put(_ms);
                         JSONArray signing_keys = _ms.getJSONObject("signing_keys").getJSONArray("keys");
                         for (int j = 0; j < signing_keys.length(); j++) {
                             JWK key = JWK.parse(signing_keys.getJSONObject(j).toString());
                             keys.add(key);
-                            msl.put(_ms);
                         }
                     }
-                    // replace old metadata_statements with the new one
-                    pl.put("decoded_metadata_statements", msl);
                 }
+                pl.put("metadata_statements", msl);
             }
             else {
                 keys = root_keys;
@@ -376,7 +375,7 @@ public final class LoginActivity extends AppCompatActivity {
                 JSONObject ms = this.verify_ms(statement, root_keys);
                 if (ms != null)
                     try {
-                        System.out.println(ms.toString(2));
+                        System.out.println(ms.toString(4));
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
