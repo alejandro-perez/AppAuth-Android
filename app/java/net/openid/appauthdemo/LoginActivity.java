@@ -73,12 +73,14 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.lang.reflect.Array;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -280,19 +282,64 @@ public final class LoginActivity extends AppCompatActivity {
                 mConfiguration.getConnectionBuilder());
     }
 
-    private boolean is_lessser(JSONObject obj1, JSONObject obj2){
-        return true;
+    private boolean is_lesser(Object obj1, Object obj2) throws JSONException {
+        if (!obj1.getClass().equals(obj2.getClass()))
+            return false;
+        else if (obj1 instanceof String)
+            return obj1.equals(obj2);
+        else if (obj1 instanceof Integer)
+            return (Integer) obj1 <= (Integer) obj2;
+        else if (obj1 instanceof Double)
+            return (Double) obj1 <= (Double) obj2;
+        else if (obj1 instanceof Long)
+            return (Long) obj1 <= (Long) obj2;
+        else if (obj1 instanceof Boolean)
+            return obj1 == obj2;
+        else if (obj1 instanceof JSONArray){
+            JSONArray list1 = (JSONArray) obj1;
+            JSONArray list2 = (JSONArray) obj2;
+            boolean found = false;
+            for (int i=0; i<list1.length(); i++){
+                for (int j=0; j<list2.length(); j++){
+                    if (is_lesser(list1.get(i), list2.get(j))) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found)
+                    return false;
+            }
+            return true;
+        }
+        else if (obj1 instanceof JSONObject){
+            JSONObject jobj1 = (JSONObject) obj1;
+            JSONObject jobj2 = (JSONObject) obj2;
+            Iterator<String> it = jobj1.keys();
+            while (it.hasNext()){
+                String key = it.next();
+                if (!is_lesser(jobj1.get(key), jobj2.opt(key)))
+                    return false;
+            }
+            return true;
+        }
+        else
+            throw new JSONException("Unexpeccted JSON class: " + obj1.getClass().toString());
     }
 
     private JSONObject flatten(JSONObject upper, JSONObject lower) throws JSONException {
+        String[] use_lower = {"iss", "sub", "aud", "exp", "nbf", "iat", "jti"};
+        String[] use_upper = {"signing_keys", "signing_keys_uri", "metadata_statement_uris", "kid",
+                              "metadata_statements", "usage"};
         JSONObject flattened = new JSONObject(lower.toString());
         Iterator<String> it = upper.keys();
         while (it.hasNext()){
             String claim_name = it.next();
-            if (this.is_lessser(upper.optJSONObject(claim_name), lower.optJSONObject(claim_name))){
-                Log.d("FED", "Using " + claim_name + " from upper as it is lesser");
-                flattened.put(claim_name, upper.optJSONObject(claim_name));
-            }
+            if (Arrays.asList(use_lower).contains(claim_name))
+                continue;
+            if (lower.opt(claim_name) == null
+                    || Arrays.asList(use_upper).contains(claim_name)
+                    || this.is_lesser(upper.get(claim_name), lower.get(claim_name)))
+                flattened.put(claim_name, upper.get(claim_name));
         }
         return flattened;
     }
@@ -309,37 +356,40 @@ public final class LoginActivity extends AppCompatActivity {
         jwtProcessor.process(signedJWT, null);
     }
 
-    private JSONObject verify_ms(String ms_jwt, JWKSet root_keys) {
+    private JSONArray verify_ms(String ms_jwt, JWKSet root_keys) {
         try {
             SignedJWT signedJWT = SignedJWT.parse(ms_jwt);
+            JWKSet keys = new JWKSet();
+            JSONArray flat_msl = new JSONArray();
             // convert nimbus JSON object to org.json.JSONObject for simpler processing
             JSONObject payload = new JSONObject(signedJWT.getPayload().toString());
             Log.d("FED", "Inspecting MS signed by: " + payload.getString("iss") + " with KID:"
                          + signedJWT.getHeader().getKeyID());
             if (payload.has("metadata_statements")) {
-                JWKSet signing_keys = new JWKSet();
-                JSONArray validated_ms = new JSONArray();
                 JSONArray statements = payload.getJSONArray("metadata_statements");
                 for (int i = 0; i < statements.length(); i++) {
-                    JSONObject sub_ms = verify_ms(statements.getString(i), root_keys);
-                    if (sub_ms != null){
+                    JSONArray flat_sub_ms = verify_ms(statements.getString(i), root_keys);
+                    for (int j = 0; j < flat_sub_ms.length(); j++){
+                        JSONObject sub_ms = flat_sub_ms.getJSONObject(j);
                         JWKSet sub_signing_keys= JWKSet.parse(
                             sub_ms.getJSONObject("signing_keys").toString());
-                        signing_keys.getKeys().addAll(sub_signing_keys.getKeys());
-                        validated_ms.put(sub_ms);
+                        keys.getKeys().addAll(sub_signing_keys.getKeys());
+                        flat_msl.put(this.flatten(payload, sub_ms));
                     }
                 }
-                payload.put("validated_metadata_statements", validated_ms);
-                this.verify_signature(signedJWT, signing_keys);
             }
             else {
-                this.verify_signature(signedJWT, root_keys);
+                keys = root_keys;
+                flat_msl.put(payload);
             }
-            Log.d("FED", "Successful validation of signature of " + payload.getString("iss") + " with KID:" + signedJWT.getHeader().getKeyID());
-            return payload;
+            this.verify_signature(signedJWT, keys);
+            Log.d("FED", "Successful validation of signature of " + payload.getString("iss")
+                         + " with KID:" + signedJWT.getHeader().getKeyID());
+            return flat_msl;
         } catch (JOSEException | JSONException | ParseException | BadJOSEException e) {
             Log.d("FED", "Error validating MS." + e.toString());
-            return null;
+            e.printStackTrace();
+            return new JSONArray();
         }
     }
 
@@ -351,33 +401,35 @@ public final class LoginActivity extends AppCompatActivity {
             return;
         }
 
-        // if there are metadata statements, try to validate them first
-        List<String> metadata_statements = config.discoveryDoc.getMetadataStatements();
-        if (metadata_statements != null){
-            Log.d("FED", "OP provides " + metadata_statements.size() + " statements");
-            for (String statement: metadata_statements) {
-                JWKSet root_keys = null;
-                try {
-                    root_keys = JWKSet.parse(mConfiguration.getAuthorizedKeys().toString());
-                    JSONObject ms = this.verify_ms(statement, root_keys);
-                    if (ms != null) {
-                        Log.d("FED", "Validation of compounded MS successful!");
-                        System.out.println(ms.toString(4));
-                    }
-                    else
-                        Log.d("FED", "MS could not be validated");
-                } catch (JSONException | ParseException e) {
-                    Log.d("FED", "Validation of compounded MS failed");
-                    e.printStackTrace();
+        // if there are metadata statements, get a flat version of them
+        try {
+            List<String> metadata_statements = config.discoveryDoc.getMetadataStatements();
+            if (metadata_statements != null) {
+                Log.d("FED", "OP provides " + metadata_statements.size() + " statements");
+                JWKSet root_keys = JWKSet.parse(mConfiguration.getAuthorizedKeys().toString());
+                JSONArray flat_msl = new JSONArray();
+                for (String statement : metadata_statements) {
+                    JSONArray _msl = this.verify_ms(statement, root_keys);
+                    for (int i = 0; i < _msl.length(); i++)
+                        flat_msl.put(_msl.get(i));
+                }
+                Log.d("FED", "We've got a total of " + flat_msl.length() + " signed and flattened metadata statements");
+                for (int i = 0; i < flat_msl.length(); i++) {
+                    JSONObject ms = flat_msl.getJSONObject(i);
+                    Log.d("FED", "Statement for federation id " + ms.getString("iss"));
+                    System.out.println(ms.toString(2));
                 }
             }
+        } catch (JSONException | ParseException e) {
+            Log.d("FED", "There was a problem validating the metadata. Check strack trace for more details");
+            e.printStackTrace();
         }
 
         mAuthStateManager.replace(new AuthState(config));
         mExecutor.submit(this::initializeClient);
     }
 
-    /**
+        /**
      * Initiates a dynamic registration request if a client ID is not provided by the static
      * configuration.
      */
