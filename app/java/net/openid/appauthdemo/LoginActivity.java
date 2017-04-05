@@ -80,6 +80,7 @@ import java.security.cert.X509Certificate;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -278,38 +279,54 @@ public final class LoginActivity extends AppCompatActivity {
                 this::handleConfigurationRetrievalResult,
                 mConfiguration.getConnectionBuilder());
     }
-    
-    private JSONObject verify_ms(String ms_jwt, List<JWK> root_keys) {
+
+    private boolean is_lessser(JSONObject obj1, JSONObject obj2){
+        return true;
+    }
+
+    private JSONObject flatten(JSONObject upper, JSONObject lower) throws JSONException {
+        JSONObject flattened = new JSONObject(lower.toString());
+        Iterator<String> it = upper.keys();
+        while (it.hasNext()){
+            String claim_name = it.next();
+            if (this.is_lessser(upper.optJSONObject(claim_name), lower.optJSONObject(claim_name))){
+                Log.d("FED", "Using " + claim_name + " from upper as it is lesser");
+                flattened.put(claim_name, upper.optJSONObject(claim_name));
+            }
+        }
+        return flattened;
+    }
+
+    private JSONObject verify_ms(String ms_jwt, JSONObject root_keys) {
         try {
-            List<JWK> keys = new ArrayList<JWK>();
             SignedJWT signedJWT = SignedJWT.parse(ms_jwt);
             // convert nimbus JSON object to org.json.JSONObject for simpler processing
             JSONObject payload = new JSONObject(signedJWT.getPayload().toString());
-            Log.d("FED", "Inspecting MS signed by: " + payload.getString("iss") + " with KID:" + signedJWT.getHeader().getKeyID());
+            Log.d("FED", "Inspecting MS signed by: " + payload.getString("iss") + " with KID:"
+                         + signedJWT.getHeader().getKeyID());
+            JWKSet keys = new JWKSet();
             if (payload.has("metadata_statements")) {
+                JSONArray validated_msl = new JSONArray();
                 JSONArray statements = payload.getJSONArray("metadata_statements");
-                JSONArray flattened_msl = new JSONArray();  // list of flattened statements
                 for (int i = 0; i < statements.length(); i++) {
                     JSONObject sub_ms = verify_ms(statements.getString(i), root_keys);
                     if (sub_ms != null){
-                        flattened_msl.put(sub_ms);
-                        JSONArray signing_keys = sub_ms.getJSONObject("signing_keys").getJSONArray("keys");
-                        for (int j = 0; j < signing_keys.length(); j++) {
-                            JWK key = JWK.parse(signing_keys.getJSONObject(j).toString());
-                            keys.add(key);
-                        }
+                        JWKSet signing_set = JWKSet.parse(
+                            sub_ms.getJSONObject("signing_keys").toString());
+                        keys.getKeys().addAll(signing_set.getKeys());
+                        validated_msl.put(sub_ms);
                     }
                 }
-                payload.put("metadata_statements", flattened_msl);
+                payload.put("validated_metadata_statements", validated_msl);
             }
             else {
-                keys = root_keys;
+                keys = JWKSet.parse(root_keys.toString());
             }
             // This is where validation takes place
             ConfigurableJWTProcessor jwtProcessor = new DefaultJWTProcessor();
             JWSKeySelector keySelector = new JWSVerificationKeySelector(
                 signedJWT.getHeader().getAlgorithm(),
-                new ImmutableJWKSet(new JWKSet(keys)));
+                new ImmutableJWKSet(keys));
             DefaultJWTClaimsVerifier cverifier = new DefaultJWTClaimsVerifier();
             cverifier.setMaxClockSkew(500000000);
             jwtProcessor.setJWTClaimsSetVerifier(cverifier);
@@ -319,7 +336,6 @@ public final class LoginActivity extends AppCompatActivity {
             return payload;
         } catch (JOSEException | JSONException | ParseException | BadJOSEException e) {
             Log.d("FED", "Error validating MS." + e.toString());
-            e.printStackTrace();
             return null;
         }
     }
@@ -335,24 +351,15 @@ public final class LoginActivity extends AppCompatActivity {
         // if there are metadata statements, try to validate them first
         List<String> metadata_statements = config.discoveryDoc.getMetadataStatements();
         if (metadata_statements != null){
-            JSONArray keys = mConfiguration.getAuthorizedKeys();
+            Log.d("FED", "OP provides " + metadata_statements.size() + " statements");
             for (String statement: metadata_statements) {
-                List<JWK> root_keys = new ArrayList<JWK>();
-                for (int i=0; i < keys.length(); i++) {
-                    try{
-                        JSONObject key = keys.getJSONObject(i);
-                        root_keys.add(JWK.parse(key.toString()));
-                    } catch (ParseException | JSONException e) {
-                        Log.d("FED", "Key is not a valid JWK object. Omitting.");
-                        e.printStackTrace();
-                    }
-                }
-                JSONObject ms = this.verify_ms(statement, root_keys);
+                JSONObject ms = this.verify_ms(statement, mConfiguration.getAuthorizedKeys());
                 if (ms != null) {
                     try {
                         Log.d("FED", "Validation of compounded MS successful!");
                         System.out.println(ms.toString(4));
                     } catch (JSONException e) {
+                        Log.d("FED", "Validation of compounded MS failed");
                         e.printStackTrace();
                     }
                 }
