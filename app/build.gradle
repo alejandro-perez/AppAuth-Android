@@ -34,9 +34,6 @@ android {
         targetCompatibility JavaVersion.VERSION_1_8
     }
 
-    packagingOptions {
-        exclude 'META-INF/LICENSE'
-    }
     buildTypes {
         debug {
             signingConfig signingConfigs.debugAndRelease
