@@ -41,11 +41,9 @@ import java.util.List;
  * <https://openid.net/specs/openid-connect-discovery-1_0.html#rfc.section.3>"
  */
 public class AuthorizationServiceDiscovery {
-    @VisibleForTesting
-    static final StringField ISSUER = str("issuer");
 
     @VisibleForTesting
-    static final StringListField METADATA_STATEMENTS = strList("metadata_statements");
+    static final StringField ISSUER = str("issuer");
 
     @VisibleForTesting
     static final UriField AUTHORIZATION_ENDPOINT = uri("authorization_endpoint");
@@ -269,13 +267,6 @@ public class AuthorizationServiceDiscovery {
         return get(USERINFO_ENDPOINT);
     }
 
-    /**
-     * The Metadata statements object.
-     */
-    @Nullable
-    public List<String> getMetadataStatements() {
-        return get(METADATA_STATEMENTS);
-    }
     /**
      * The JSON web key set document URI.
      *
