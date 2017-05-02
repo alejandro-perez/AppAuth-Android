@@ -2,7 +2,7 @@
   "client_id": "",
   "redirect_uri": "net.openid.appauthdemo:/oauth2redirect",
   "authorization_scope": "openid email profile",
-  "discovery_uri": "https://agaton-sax.com:8080/android/rp-sms-mutiple-l1/.well-known/openid-configuration",
+  "discovery_uri": "https://agaton-sax.com:8080/android/rp-sms-policy-err-l2/.well-known/openid-configuration",
   "authorization_endpoint_uri": "",
   "token_endpoint_uri": "",
   "registration_endpoint_uri": "",
@@ -23,6 +23,22 @@
         "kid": "R3wo1d6yCqLEW-OWF7oLA0korje6cmcUx5_FDLZ8ntw",
         "kty": "RSA",
         "n": "vxhdGPRS3dC-RAH1nt-jt933bbKfa0gnAoOAKQ5dtTsl9F9_5FNazkxsixfu0AGwQnsjQz4zPYbhmiQpP0cBhlNY8Q_sE2FV9yISfRyEtMoDGk9d0IQx6pG8_-fT8vUIp53lWnnVCr1Sc-bTO7Fe7E39TPkzh4eJHHRjzj2aT6oG5U8eCcw7h702SEB-9Z3dneGnRc1W4KDo_PXkkiAmh2zuLsGqXv0YEg_16pVEIJ0IPIVdfkKW1S9GsViNBzBsKEhPFjGcge75WocGz0QSulmGfRLg53c8XpdE7LCaydsakyiefSlH8srEq9xucDpPpfmbe9KEWM75NuUjvpbzQw",
+        "use": "sig"
+      },
+      {
+        "iss": "https://example.com",
+        "e": "AQAB",
+        "kid": "2XBP2Bwi1a3YlyXkT7GLURJ-OS7tHID-7VKVLu-R8-A",
+        "kty": "RSA",
+        "n": "pvrUOjvE47RtEPkv93qczZNEG4eSt19-anOOIAFgX_uKAWxtSpuwNZvh9kWkk8vHmbHKJx9cGqTRa0ByiQhxMWKEXYf2xRhJM9iOQbj83OFHRsVDffRTVD9K3taevMymVRthZmNNTiABOdhA_DeiY_AEAGpp24RdSKRi2Trd83SLgFlL73zIyRkZKK4umDX5dmGoQdv9UuClI7rul4CgBjmNGy09wtckD9b9c2Pn-dQOzr0oCeebd3rrTOzWQajvkDeT2PIVrLFPpQQ4PWUKICttor4yNS-OPNIhNpZ-mBHcPaBud40zL9Gf04l0379FCS_ql5d-mfnDTxy-g4h_9Q",
+        "use": "sig"
+      },
+      {
+        "iss": "https://example.org",
+        "e": "AQAB",
+        "kid": "sCSy8y-e8-fO-cHVGlOAjHuTd43HvAkG0P1yz3XaVDo",
+        "kty": "RSA",
+        "n": "tFyuWhjhwzgtGewunIQcifWPiLkBCgKlb3xFQ1Nz2nTsWuOUOV7cZIlnWOL_ZIBjqQbRHA6qPDeaWwsTVWG9i6NXq2Gp2kFI8RIQBeO3LKcAGZNBUGMjffSko5VcBVT2wKaNo6YxqsUvf6ELIstS1NPPzIvFe8oD7qt9gUxgFpD8L5NbUKmh70Fa8dBlzSCKZ7h8gdbpzKh1Lzl5KvnRxnBvdR_TC5xjZzB8dqtFHCe2SZKJHaaW8UsL6m0jsx5h8Nf1NguSCColhtVJHBSJYttrakRMeWjwDp5ME6B1nIqhRmWrnSg_FS4TS9PnXPFZV9UIvf0YkLgX1mp0LWUCAQ",
         "use": "sig"
       }
     ]

@@ -282,7 +282,7 @@ public final class LoginActivity extends AppCompatActivity {
                 mConfiguration.getConnectionBuilder());
     }
 
-    private boolean is_lesser(Object obj1, Object obj2) throws JSONException {
+    private boolean is_subset(Object obj1, Object obj2) throws JSONException {
         if (!obj1.getClass().equals(obj2.getClass()))
             return false;
         else if (obj1 instanceof String)
@@ -298,10 +298,10 @@ public final class LoginActivity extends AppCompatActivity {
         else if (obj1 instanceof JSONArray){
             JSONArray list1 = (JSONArray) obj1;
             JSONArray list2 = (JSONArray) obj2;
-            boolean found = false;
             for (int i=0; i<list1.length(); i++){
+                boolean found = false;
                 for (int j=0; j<list2.length(); j++){
-                    if (is_lesser(list1.get(i), list2.get(j))) {
+                    if (list1.get(i).equals(list2.get(j))) {
                         found = true;
                         break;
                     }
@@ -317,19 +317,19 @@ public final class LoginActivity extends AppCompatActivity {
             Iterator<String> it = jobj1.keys();
             while (it.hasNext()){
                 String key = it.next();
-                if (!is_lesser(jobj1.get(key), jobj2.opt(key)))
+                if (!jobj2.has(key) || !is_subset(jobj1.get(key), jobj2.get(key)))
                     return false;
             }
             return true;
         }
         else
-            throw new JSONException("Unexpeccted JSON class: " + obj1.getClass().toString());
+            throw new JSONException("Unexpected JSON class: " + obj1.getClass().toString());
     }
 
     private JSONObject flatten(JSONObject upper, JSONObject lower) throws JSONException {
         String[] use_lower = {"iss", "sub", "aud", "exp", "nbf", "iat", "jti"};
         String[] use_upper = {"signing_keys", "signing_keys_uri", "metadata_statement_uris", "kid",
-                              "metadata_statements", "usage"};
+            "metadata_statements", "usage"};
         JSONObject flattened = new JSONObject(lower.toString());
         Iterator<String> it = upper.keys();
         while (it.hasNext()){
@@ -337,20 +337,25 @@ public final class LoginActivity extends AppCompatActivity {
             if (Arrays.asList(use_lower).contains(claim_name))
                 continue;
             if (lower.opt(claim_name) == null
-                    || Arrays.asList(use_upper).contains(claim_name)
-                    || this.is_lesser(upper.get(claim_name), lower.get(claim_name)))
+                || Arrays.asList(use_upper).contains(claim_name)
+                || is_subset(upper.get(claim_name), lower.get(claim_name))) {
                 flattened.put(claim_name, upper.get(claim_name));
+            }
+            else {
+                throw new JSONException("Policy breach with claim: " + claim_name
+                    + ". Lower value=" + lower.get(claim_name)
+                    + ". Upper value=" + upper.get(claim_name));
+            }
         }
         return flattened;
     }
 
     private void verify_signature(SignedJWT signedJWT, JWKSet keys) throws BadJOSEException, JOSEException {
         ConfigurableJWTProcessor jwtProcessor = new DefaultJWTProcessor();
-        JWSKeySelector keySelector = new JWSVerificationKeySelector(
-            signedJWT.getHeader().getAlgorithm(),
+        JWSKeySelector keySelector = new JWSVerificationKeySelector(signedJWT.getHeader().getAlgorithm(),
             new ImmutableJWKSet(keys));
         DefaultJWTClaimsVerifier cverifier = new DefaultJWTClaimsVerifier();
-        cverifier.setMaxClockSkew(500000000);
+        cverifier.setMaxClockSkew(5000000);
         jwtProcessor.setJWTClaimsSetVerifier(cverifier);
         jwtProcessor.setJWSKeySelector(keySelector);
         jwtProcessor.process(signedJWT, null);
@@ -363,18 +368,17 @@ public final class LoginActivity extends AppCompatActivity {
             JSONArray flat_msl = new JSONArray();
             // convert nimbus JSON object to org.json.JSONObject for simpler processing
             JSONObject payload = new JSONObject(signedJWT.getPayload().toString());
-            Log.d("FED", "Inspecting MS signed by: " + payload.getString("iss") + " with KID:"
-                         + signedJWT.getHeader().getKeyID());
+            Log.d("FED", "Inspecting MS signed by: " + payload.getString("iss")
+                  + " with KID:" + signedJWT.getHeader().getKeyID());
             if (payload.has("metadata_statements")) {
                 JSONArray statements = payload.getJSONArray("metadata_statements");
                 for (int i = 0; i < statements.length(); i++) {
                     JSONArray flat_sub_ms = verify_ms(statements.getString(i), root_keys);
                     for (int j = 0; j < flat_sub_ms.length(); j++){
                         JSONObject sub_ms = flat_sub_ms.getJSONObject(j);
-                        JWKSet sub_signing_keys= JWKSet.parse(
-                            sub_ms.getJSONObject("signing_keys").toString());
+                        JWKSet sub_signing_keys= JWKSet.parse(sub_ms.getJSONObject("signing_keys").toString());
                         keys.getKeys().addAll(sub_signing_keys.getKeys());
-                        flat_msl.put(this.flatten(payload, sub_ms));
+                        flat_msl.put(flatten(payload, sub_ms));
                     }
                 }
             }
@@ -382,13 +386,12 @@ public final class LoginActivity extends AppCompatActivity {
                 keys = root_keys;
                 flat_msl.put(payload);
             }
-            this.verify_signature(signedJWT, keys);
+            verify_signature(signedJWT, keys);
             Log.d("FED", "Successful validation of signature of " + payload.getString("iss")
-                         + " with KID:" + signedJWT.getHeader().getKeyID());
+                  + " with KID:" + signedJWT.getHeader().getKeyID());
             return flat_msl;
         } catch (JOSEException | JSONException | ParseException | BadJOSEException e) {
-            Log.d("FED", "Error validating MS." + e.toString());
-            e.printStackTrace();
+            Log.d("FED", "Error validating MS. Ignoring. " + e.toString());
             return new JSONArray();
         }
     }
@@ -408,7 +411,7 @@ public final class LoginActivity extends AppCompatActivity {
                 Log.d("FED", "OP provides " + metadata_statements.size() + " statements");
                 JWKSet root_keys = JWKSet.parse(mConfiguration.getAuthorizedKeys().toString());
                 JSONArray flat_msl = new JSONArray();
-                for (String statement : metadata_statements) {
+                for (String statement: metadata_statements) {
                     JSONArray _msl = this.verify_ms(statement, root_keys);
                     for (int i = 0; i < _msl.length(); i++)
                         flat_msl.put(_msl.get(i));
@@ -421,8 +424,7 @@ public final class LoginActivity extends AppCompatActivity {
                 }
             }
         } catch (JSONException | ParseException e) {
-            Log.d("FED", "There was a problem validating the metadata. Check strack trace for more details");
-            e.printStackTrace();
+            Log.d("FED", "There was a problem validating the metadata: " + e.toString());
         }
 
         mAuthStateManager.replace(new AuthState(config));
