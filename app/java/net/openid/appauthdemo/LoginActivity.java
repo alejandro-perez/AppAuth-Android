@@ -212,7 +212,6 @@ public final class LoginActivity extends AppCompatActivity {
             displayError("Failed to retrieve discovery document: " + ex.getMessage(), true);
             return;
         }
-
         JSONObject federated_config = Federation.getFederatedConfiguration(mConfiguration, config);
 
         mAuthStateManager.replace(new AuthState(config));

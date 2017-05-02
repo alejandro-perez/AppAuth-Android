@@ -61,9 +61,8 @@ public class Federation {
         else if (obj1 instanceof JSONObject){
             JSONObject jobj1 = (JSONObject) obj1;
             JSONObject jobj2 = (JSONObject) obj2;
-            Iterator<String> it = jobj1.keys();
-            while (it.hasNext()){
-                String key = it.next();
+            for(Iterator<String> iter = jobj1.keys(); iter.hasNext();) {
+                String key = iter.next();
                 if (!jobj2.has(key) || !is_subset(jobj1.get(key), jobj2.get(key)))
                     return false;
             }
@@ -78,20 +77,19 @@ public class Federation {
         String[] use_upper = {"signing_keys", "signing_keys_uri", "metadata_statement_uris", "kid",
             "metadata_statements", "usage"};
         JSONObject flattened = new JSONObject(lower.toString());
-        Iterator<String> it = upper.keys();
-        while (it.hasNext()){
-            String claim_name = it.next();
+        for(Iterator<String> iter = upper.keys();iter.hasNext();) {
+            String claim_name = iter.next();
             if (Arrays.asList(use_lower).contains(claim_name))
                 continue;
             if (lower.opt(claim_name) == null
-                || Arrays.asList(use_upper).contains(claim_name)
-                || is_subset(upper.get(claim_name), lower.get(claim_name))) {
+                    || Arrays.asList(use_upper).contains(claim_name)
+                    || is_subset(upper.get(claim_name), lower.get(claim_name))) {
                 flattened.put(claim_name, upper.get(claim_name));
             }
             else {
                 throw new JSONException("Policy breach with claim: " + claim_name
-                    + ". Lower value=" + lower.get(claim_name)
-                    + ". Upper value=" + upper.get(claim_name));
+                                        + ". Lower value=" + lower.get(claim_name)
+                                        + ". Upper value=" + upper.get(claim_name));
             }
         }
         return flattened;
@@ -108,11 +106,12 @@ public class Federation {
         jwtProcessor.process(signedJWT, null);
     }
 
-    public static JSONArray verify_ms(String ms_jwt, JWKSet root_keys) {
+
+    public static JSONObject verify_ms(String ms_jwt, JWKSet root_keys) {
         try {
             SignedJWT signedJWT = SignedJWT.parse(ms_jwt);
             JWKSet keys = new JWKSet();
-            JSONArray flat_msl = new JSONArray();
+            JSONObject flat_msl = new JSONObject();
             // convert nimbus JSON object to org.json.JSONObject for simpler processing
             JSONObject payload = new JSONObject(signedJWT.getPayload().toString());
             Log.d("FED", "Inspecting MS signed by: " + payload.getString("iss")
@@ -120,18 +119,19 @@ public class Federation {
             if (payload.has("metadata_statements")) {
                 JSONArray statements = payload.getJSONArray("metadata_statements");
                 for (int i = 0; i < statements.length(); i++) {
-                    JSONArray flat_sub_ms = verify_ms(statements.getString(i), root_keys);
-                    for (int j = 0; j < flat_sub_ms.length(); j++){
-                        JSONObject sub_ms = flat_sub_ms.getJSONObject(j);
+                    JSONObject flat_sub_ms = verify_ms(statements.getString(i), root_keys);
+                    for(Iterator<String> iter = flat_sub_ms.keys();iter.hasNext();) {
+                        String fedop = iter.next();
+                        JSONObject sub_ms = flat_sub_ms.getJSONObject(fedop);
                         JWKSet sub_signing_keys= JWKSet.parse(sub_ms.getJSONObject("signing_keys").toString());
                         keys.getKeys().addAll(sub_signing_keys.getKeys());
-                        flat_msl.put(flatten(payload, sub_ms));
+                        flat_msl.put(fedop, flatten(payload, sub_ms));
                     }
                 }
             }
             else {
                 keys = root_keys;
-                flat_msl.put(payload);
+                flat_msl.put(payload.getString("iss"), payload);
             }
             verify_signature(signedJWT, keys);
             Log.d("FED", "Successful validation of signature of " + payload.getString("iss")
@@ -139,7 +139,7 @@ public class Federation {
             return flat_msl;
         } catch (JOSEException | JSONException | ParseException | BadJOSEException e) {
             Log.d("FED", "Error validating MS. Ignoring. " + e.toString());
-            return new JSONArray();
+            return new JSONObject();
         }
     }
 
@@ -151,24 +151,27 @@ public class Federation {
             if (metadata_statements != null) {
                 Log.d("FED", "OP provides " + metadata_statements.length() + " statements");
                 JWKSet root_keys = JWKSet.parse(mConfiguration.getAuthorizedKeys().toString());
-                JSONArray flat_msl = new JSONArray();
+                JSONObject flat_msl = new JSONObject();
                 for (int i=0; i<metadata_statements.length(); i++) {
                     String statement = metadata_statements.getString(i);
-                    JSONArray _msl = verify_ms(statement, root_keys);
-                    for (int j = 0; j < _msl.length(); j++)
-                        flat_msl.put(_msl.get(j));
+                    JSONObject _msl = verify_ms(statement, root_keys);
+                    for(Iterator<String> iter = _msl.keys();iter.hasNext();) {
+                        String key = iter.next();
+                        flat_msl.put(key, _msl.get(key));
+                    }
                 }
                 Log.d("FED", "We've got a total of " + flat_msl.length()
                     + " signed and flattened metadata statements");
-                for (int i = 0; i < flat_msl.length(); i++) {
-                    JSONObject ms = flat_msl.getJSONObject(i);
-                    Log.d("FED", "Statement for federation id " + ms.getString("iss"));
+                for(Iterator<String> iter = flat_msl.keys();iter.hasNext();) {
+                    String key = iter.next();
+                    JSONObject ms = flat_msl.getJSONObject(key);
+                    Log.d("FED", "Statement for federation id " + key);
                     System.out.println(ms.toString(2));
                 }
                 if (flat_msl.length() == 0)
                     return null;
                 else
-                    return flat_msl.getJSONObject(0);
+                    return flat_msl;
             }
         } catch (JSONException | ParseException e) {
             Log.d("FED", "There was a problem validating the federated metadata: " + e.toString());
