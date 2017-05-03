@@ -416,8 +416,38 @@ public class AuthorizationServiceConfiguration {
             jwtProcessor.process(signedJWT, null);
         }
 
+        private JSONArray get_metadata_statements(JSONObject payload) throws JSONException, IOException {
+            JSONArray msl = payload.optJSONArray("metadata_statements");
+            JSONObject ms_uris = payload.optJSONObject("metadata_statement_uris");
 
-        private JSONObject verify_ms(String ms_jwt) {
+            if (msl != null){
+                if (ms_uris != null) {
+                    throw new JSONException("metadata_statements and metadata_statement_uris cannot " +
+                        "be present at the same time");
+                }
+                return msl;
+            }
+
+            if (ms_uris == null){
+                return new JSONArray();
+            }
+
+            // iterate over all the ms_uris
+            JSONArray result = new JSONArray();
+            for(Iterator<String> iter = ms_uris.keys(); iter.hasNext();) {
+                String key = iter.next();
+                HttpURLConnection conn = mConnectionBuilder.openConnection(JsonUtil.getUri(ms_uris, key));
+                conn.setRequestMethod("GET");
+                conn.setDoInput(true);
+                conn.connect();
+                InputStream is = conn.getInputStream();
+                Log.d("FED", "AAA: " + key);
+                result.put(Utils.readInputStream(is));
+            }
+            return result;
+        }
+
+        private JSONObject verify_ms(String ms_jwt) throws IOException {
             try {
                 SignedJWT signedJWT = SignedJWT.parse(ms_jwt);
                 JWKSet keys = new JWKSet();
@@ -426,8 +456,8 @@ public class AuthorizationServiceConfiguration {
                 JSONObject payload = new JSONObject(signedJWT.getPayload().toString());
                 Log.d("FED", "Inspecting MS signed by: " + payload.getString("iss")
                     + " with KID:" + signedJWT.getHeader().getKeyID());
-                if (payload.has("metadata_statements")) {
-                    JSONArray statements = payload.getJSONArray("metadata_statements");
+                JSONArray statements = get_metadata_statements(payload);
+                if (statements.length() > 0) {
                     for (int i = 0; i < statements.length(); i++) {
                         JSONObject flat_sub_ms = verify_ms(statements.getString(i));
                         for(Iterator<String> iter = flat_sub_ms.keys(); iter.hasNext();) {
@@ -453,11 +483,11 @@ public class AuthorizationServiceConfiguration {
             }
         }
 
-        private JSONObject getFederatedConfiguration(JSONObject discovery_doc){
+        private JSONObject getFederatedConfiguration(JSONObject discovery_doc) throws IOException {
             // if there are metadata statements, get a flat version of them
             try {
-                JSONArray metadata_statements = discovery_doc.getJSONArray("metadata_statements");
-                if (metadata_statements != null) {
+                JSONArray metadata_statements = get_metadata_statements(discovery_doc);
+                if (metadata_statements.length() > 0) {
                     Log.d("FED", "OP provides " + metadata_statements.length() + " statements");
                     JSONObject flat_msl = new JSONObject();
                     for (int i=0; i<metadata_statements.length(); i++) {
