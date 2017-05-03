@@ -50,8 +50,6 @@ import net.openid.appauth.browser.BrowserMatcher;
 import net.openid.appauth.browser.ExactBrowserMatcher;
 import net.openid.appauthdemo.BrowserSelectionAdapter.BrowserInfo;
 
-import org.json.JSONObject;
-
 import java.util.Collections;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -202,7 +200,9 @@ public final class LoginActivity extends AppCompatActivity {
         AuthorizationServiceConfiguration.fetchFromUrl(
                 mConfiguration.getDiscoveryUri(),
                 this::handleConfigurationRetrievalResult,
-                mConfiguration.getConnectionBuilder());
+                mConfiguration.getConnectionBuilder(),
+                mConfiguration.getAuthorizedKeys()
+            );
     }
 
     @MainThread
@@ -212,7 +212,6 @@ public final class LoginActivity extends AppCompatActivity {
             displayError("Failed to retrieve discovery document: " + ex.getMessage(), true);
             return;
         }
-        JSONObject federated_config = Federation.getFederatedConfiguration(mConfiguration, config);
 
         mAuthStateManager.replace(new AuthState(config));
         mExecutor.submit(this::initializeClient);
