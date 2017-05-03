@@ -56,8 +56,6 @@ import net.openid.appauth.browser.BrowserMatcher;
 import net.openid.appauth.browser.ExactBrowserMatcher;
 import net.openid.appauthdemo.BrowserSelectionAdapter.BrowserInfo;
 
-import org.json.JSONObject;
-
 import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -216,7 +214,9 @@ public final class LoginActivity extends AppCompatActivity {
         AuthorizationServiceConfiguration.fetchFromUrl(
                 mConfiguration.getDiscoveryUri(),
                 this::handleConfigurationRetrievalResult,
-                mConfiguration.getConnectionBuilder());
+                mConfiguration.getConnectionBuilder(),
+                mConfiguration.getAuthorizedKeys()
+            );
     }
 
     @MainThread
@@ -229,8 +229,6 @@ public final class LoginActivity extends AppCompatActivity {
         }
 
         Log.i(TAG, "Discovery document retrieved");
-        JSONObject federated_config = Federation.getFederatedConfiguration(mConfiguration, config);
-
         mAuthStateManager.replace(new AuthState(config));
         mExecutor.submit(this::initializeClient);
     }

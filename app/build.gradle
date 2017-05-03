@@ -52,7 +52,6 @@ dependencies {
     compile 'com.github.bumptech.glide:glide:3.7.0'
     compile 'com.squareup.okio:okio:1.11.0'
     compile 'joda-time:joda-time:2.9.7'
-    compile group: 'com.nimbusds', name: 'nimbus-jose-jwt', version: '4.34.2'
 }
 
 apply from: '../config/style.gradle'

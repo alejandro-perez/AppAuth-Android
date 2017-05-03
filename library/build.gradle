@@ -16,6 +16,7 @@ android.buildTypes.debug.manifestPlaceholders = [
 ];
 
 dependencies {
+    compile group: 'com.nimbusds', name: 'nimbus-jose-jwt', version: '4.34.2'
     compile "com.android.support:customtabs:${rootProject.supportLibVersion}"
     apply from: '../config/testdeps.gradle', to:it
 }

@@ -21,19 +21,34 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.util.Log;
+
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.jwk.JWKSet;
+import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
+import com.nimbusds.jose.proc.BadJOSEException;
+import com.nimbusds.jose.proc.JWSKeySelector;
+import com.nimbusds.jose.proc.JWSVerificationKeySelector;
+import com.nimbusds.jwt.SignedJWT;
+import com.nimbusds.jwt.proc.ConfigurableJWTProcessor;
+import com.nimbusds.jwt.proc.DefaultJWTClaimsVerifier;
+import com.nimbusds.jwt.proc.DefaultJWTProcessor;
 
 import net.openid.appauth.AuthorizationException.GeneralErrors;
 
 import net.openid.appauth.connectivity.ConnectionBuilder;
 import net.openid.appauth.connectivity.DefaultConnectionBuilder;
 import net.openid.appauth.internal.Logger;
-
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
+import java.text.ParseException;
+import java.util.Arrays;
+import java.util.Iterator;
 
 /**
  * Configuration details required to interact with an authorization service.
@@ -247,7 +262,8 @@ public class AuthorizationServiceConfiguration {
             @NonNull RetrieveConfigurationCallback callback) {
         fetchFromUrl(openIdConnectDiscoveryUri,
                 callback,
-                DefaultConnectionBuilder.INSTANCE);
+                DefaultConnectionBuilder.INSTANCE
+            );
     }
 
     /**
@@ -271,8 +287,26 @@ public class AuthorizationServiceConfiguration {
         new ConfigurationRetrievalAsyncTask(
                 openIdConnectDiscoveryUri,
                 connectionBuilder,
+                new JSONObject(),
                 callback)
                 .execute();
+    }
+
+    public static void fetchFromUrl(
+        @NonNull Uri openIdConnectDiscoveryUri,
+        @NonNull RetrieveConfigurationCallback callback,
+        @NonNull ConnectionBuilder connectionBuilder,
+        @NonNull JSONObject authorized_keys) {
+        checkNotNull(openIdConnectDiscoveryUri, "openIDConnectDiscoveryUri cannot be null");
+        checkNotNull(callback, "callback cannot be null");
+        checkNotNull(connectionBuilder, "connectionBuilder must not be null");
+        checkNotNull(authorized_keys, "authorized_keys must not be null");
+        new ConfigurationRetrievalAsyncTask(
+            openIdConnectDiscoveryUri,
+            connectionBuilder,
+            authorized_keys,
+            callback)
+            .execute();
     }
 
     /**
@@ -309,15 +343,166 @@ public class AuthorizationServiceConfiguration {
         private ConnectionBuilder mConnectionBuilder;
         private RetrieveConfigurationCallback mCallback;
         private AuthorizationException mException;
+        private JSONObject mAuthorizedKeys;
 
         ConfigurationRetrievalAsyncTask(
                 Uri uri,
                 ConnectionBuilder connectionBuilder,
+                JSONObject authorized_keys,
                 RetrieveConfigurationCallback callback) {
             mUri = uri;
             mConnectionBuilder = connectionBuilder;
             mCallback = callback;
+            mAuthorizedKeys = authorized_keys;
             mException = null;
+        }
+
+        private boolean is_subset(Object obj1, Object obj2) throws JSONException {
+            if (!obj1.getClass().equals(obj2.getClass()))
+                return false;
+            else if (obj1 instanceof String)
+                return obj1.equals(obj2);
+            else if (obj1 instanceof Integer)
+                return (Integer) obj1 <= (Integer) obj2;
+            else if (obj1 instanceof Double)
+                return (Double) obj1 <= (Double) obj2;
+            else if (obj1 instanceof Long)
+                return (Long) obj1 <= (Long) obj2;
+            else if (obj1 instanceof Boolean)
+                return obj1 == obj2;
+            else if (obj1 instanceof JSONArray){
+                JSONArray list1 = (JSONArray) obj1;
+                JSONArray list2 = (JSONArray) obj2;
+                for (int i=0; i<list1.length(); i++){
+                    boolean found = false;
+                    for (int j=0; j<list2.length(); j++){
+                        if (list1.get(i).equals(list2.get(j))) {
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found)
+                        return false;
+                }
+                return true;
+            }
+            else if (obj1 instanceof JSONObject){
+                JSONObject jobj1 = (JSONObject) obj1;
+                JSONObject jobj2 = (JSONObject) obj2;
+                for(Iterator<String> iter = jobj1.keys(); iter.hasNext();) {
+                    String key = iter.next();
+                    if (!jobj2.has(key) || !is_subset(jobj1.get(key), jobj2.get(key)))
+                        return false;
+                }
+                return true;
+            }
+            else
+                throw new JSONException("Unexpected JSON class: " + obj1.getClass().toString());
+        }
+
+        private JSONObject flatten(JSONObject upper, JSONObject lower) throws JSONException {
+            String[] use_lower = {"iss", "sub", "aud", "exp", "nbf", "iat", "jti"};
+            String[] use_upper = {"signing_keys", "signing_keys_uri", "metadata_statement_uris", "kid",
+                "metadata_statements", "usage"};
+            JSONObject flattened = new JSONObject(lower.toString());
+            for(Iterator<String> iter = upper.keys(); iter.hasNext();) {
+                String claim_name = iter.next();
+                if (Arrays.asList(use_lower).contains(claim_name))
+                    continue;
+                if (lower.opt(claim_name) == null
+                    || Arrays.asList(use_upper).contains(claim_name)
+                    || is_subset(upper.get(claim_name), lower.get(claim_name))) {
+                    flattened.put(claim_name, upper.get(claim_name));
+                }
+                else {
+                    throw new JSONException("Policy breach with claim: " + claim_name
+                        + ". Lower value=" + lower.get(claim_name)
+                        + ". Upper value=" + upper.get(claim_name));
+                }
+            }
+            return flattened;
+        }
+
+        private void verify_signature(SignedJWT signedJWT, JWKSet keys) throws BadJOSEException, JOSEException {
+            ConfigurableJWTProcessor jwtProcessor = new DefaultJWTProcessor();
+            JWSKeySelector keySelector = new JWSVerificationKeySelector(signedJWT.getHeader().getAlgorithm(),
+                new ImmutableJWKSet(keys));
+            DefaultJWTClaimsVerifier cverifier = new DefaultJWTClaimsVerifier();
+            cverifier.setMaxClockSkew(5000000);
+            jwtProcessor.setJWTClaimsSetVerifier(cverifier);
+            jwtProcessor.setJWSKeySelector(keySelector);
+            jwtProcessor.process(signedJWT, null);
+        }
+
+
+        private JSONObject verify_ms(String ms_jwt) {
+            try {
+                SignedJWT signedJWT = SignedJWT.parse(ms_jwt);
+                JWKSet keys = new JWKSet();
+                JSONObject flat_msl = new JSONObject();
+                // convert nimbus JSON object to org.json.JSONObject for simpler processing
+                JSONObject payload = new JSONObject(signedJWT.getPayload().toString());
+                Log.d("FED", "Inspecting MS signed by: " + payload.getString("iss")
+                    + " with KID:" + signedJWT.getHeader().getKeyID());
+                if (payload.has("metadata_statements")) {
+                    JSONArray statements = payload.getJSONArray("metadata_statements");
+                    for (int i = 0; i < statements.length(); i++) {
+                        JSONObject flat_sub_ms = verify_ms(statements.getString(i));
+                        for(Iterator<String> iter = flat_sub_ms.keys(); iter.hasNext();) {
+                            String fedop = iter.next();
+                            JSONObject sub_ms = flat_sub_ms.getJSONObject(fedop);
+                            JWKSet sub_signing_keys= JWKSet.parse(sub_ms.getJSONObject("signing_keys").toString());
+                            keys.getKeys().addAll(sub_signing_keys.getKeys());
+                            flat_msl.put(fedop, flatten(payload, sub_ms));
+                        }
+                    }
+                }
+                else {
+                    keys = JWKSet.parse(this.mAuthorizedKeys.toString());
+                    flat_msl.put(payload.getString("iss"), payload);
+                }
+                verify_signature(signedJWT, keys);
+                Log.d("FED", "Successful validation of signature of " + payload.getString("iss")
+                    + " with KID:" + signedJWT.getHeader().getKeyID());
+                return flat_msl;
+            } catch (JOSEException | JSONException | ParseException | BadJOSEException e) {
+                Log.d("FED", "Error validating MS. Ignoring. " + e.toString());
+                return new JSONObject();
+            }
+        }
+
+        private JSONObject getFederatedConfiguration(JSONObject discovery_doc){
+            // if there are metadata statements, get a flat version of them
+            try {
+                JSONArray metadata_statements = discovery_doc.getJSONArray("metadata_statements");
+                if (metadata_statements != null) {
+                    Log.d("FED", "OP provides " + metadata_statements.length() + " statements");
+                    JSONObject flat_msl = new JSONObject();
+                    for (int i=0; i<metadata_statements.length(); i++) {
+                        String statement = metadata_statements.getString(i);
+                        JSONObject _msl = verify_ms(statement);
+                        for(Iterator<String> iter = _msl.keys(); iter.hasNext();) {
+                            String key = iter.next();
+                            flat_msl.put(key, _msl.get(key));
+                        }
+                    }
+                    Log.d("FED", "We've got a total of " + flat_msl.length()
+                        + " signed and flattened metadata statements");
+                    for(Iterator<String> iter = flat_msl.keys(); iter.hasNext();) {
+                        String key = iter.next();
+                        JSONObject ms = flat_msl.getJSONObject(key);
+                        Log.d("FED", "Statement for federation id " + key);
+                        System.out.println(ms.toString(2));
+                    }
+                    if (flat_msl.length() == 0)
+                        return null;
+                    else
+                        return flat_msl;
+                }
+            } catch (JSONException e) {
+                Log.d("FED", "There was a problem validating the federated metadata: " + e.toString());
+            }
+            return null;
         }
 
         @Override
@@ -332,8 +517,16 @@ public class AuthorizationServiceConfiguration {
                 is = conn.getInputStream();
                 JSONObject json = new JSONObject(Utils.readInputStream(is));
 
+                JSONObject mss = getFederatedConfiguration(json);
+                // get the first one and return
+                for(Iterator<String> iter = mss.keys(); iter.hasNext();) {
+                    String key = iter.next();
+                    json = mss.getJSONObject(key);
+                }
+
                 AuthorizationServiceDiscovery discovery =
                         new AuthorizationServiceDiscovery(json);
+
                 return new AuthorizationServiceConfiguration(discovery);
             } catch (IOException ex) {
                 Logger.errorWithStack(ex, "Network error when retrieving discovery document");
