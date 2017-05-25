@@ -48,6 +48,7 @@ import net.openid.appauth.AuthorizationRequest;
 import net.openid.appauth.AuthorizationService;
 import net.openid.appauth.AuthorizationServiceConfiguration;
 import net.openid.appauth.ClientSecretBasic;
+import net.openid.appauth.FederatedAuthorizationServiceConfiguration;
 import net.openid.appauth.RegistrationRequest;
 import net.openid.appauth.RegistrationResponse;
 import net.openid.appauth.ResponseTypeValues;
@@ -211,7 +212,7 @@ public final class LoginActivity extends AppCompatActivity {
         // noinspection WrongThread
         runOnUiThread(() -> displayLoading("Retrieving discovery document"));
         Log.i(TAG, "Retrieving OpenID discovery doc");
-        AuthorizationServiceConfiguration.fetchFromUrl(
+        FederatedAuthorizationServiceConfiguration.fetchFromUrl(
                 mConfiguration.getDiscoveryUri(),
                 this::handleConfigurationRetrievalResult,
                 mConfiguration.getConnectionBuilder(),
