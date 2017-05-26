@@ -32,6 +32,7 @@ import com.nimbusds.jwt.proc.DefaultJWTProcessor;
 
 import net.openid.appauth.AuthorizationException.GeneralErrors;
 import net.openid.appauth.connectivity.ConnectionBuilder;
+import net.openid.appauth.internal.Logger;
 
 import org.json.JSONArray;
 import org.json.JSONException;
