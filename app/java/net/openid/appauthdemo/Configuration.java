@@ -163,7 +163,9 @@ public final class Configuration {
         return mHttpsRequired;
     }
 
-    public JSONObject getAuthorizedKeys() { return mAuthorizedKeys;}
+    public JSONObject getAuthorizedKeys() {
+        return mAuthorizedKeys;
+    }
 
     public ConnectionBuilder getConnectionBuilder() {
         if (isHttpsRequired()) {
