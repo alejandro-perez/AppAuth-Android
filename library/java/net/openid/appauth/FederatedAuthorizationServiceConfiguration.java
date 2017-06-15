@@ -373,14 +373,14 @@ public class FederatedAuthorizationServiceConfiguration extends AuthorizationSer
                         System.out.println(ms.toString(2));
                     }
                     if (flat_msl.length() == 0)
-                        return null;
+                        return new JSONObject();
                     else
                         return flat_msl;
                 }
             } catch (IOException | JSONException e) {
                 Log.d("FED", "There was a problem validating the federated metadata: " + e.toString());
             }
-            return null;
+            return new JSONObject();
         }
 
         @Override
