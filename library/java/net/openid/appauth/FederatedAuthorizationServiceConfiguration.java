@@ -42,8 +42,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 
 import static net.openid.appauth.Preconditions.checkNotNull;
 
@@ -170,7 +172,8 @@ public class FederatedAuthorizationServiceConfiguration extends AuthorizationSer
         }
 
         /**
-         * Flatten two metadata statements into one, following the rules from the OIDC federation draft.
+         * Flatten two metadata statements into one, following the rules from
+         * the OIDC federation draft.
          * @param upper MS (n)
          * @param lower MS(n-1)
          * @return A flattened version of both statements.
@@ -179,28 +182,24 @@ public class FederatedAuthorizationServiceConfiguration extends AuthorizationSer
          */
         private JSONObject flatten(JSONObject upper, JSONObject lower) throws JSONException {
             String[] use_lower = {"iss", "sub", "aud", "exp", "nbf", "iat", "jti"};
-            String[] use_upper = {"signing_keys", "signing_keys_uri", "metadata_statement_uris", "kid",
-                "metadata_statements", "usage"};
-            // result starts as a copy of lower MS
+            String[] use_upper = {"signing_keys", "signing_keys_uri", "metadata_statement_uris",
+                                  "kid", "metadata_statements", "usage"};
+            /* result starts as a copy of lower MS */
             JSONObject flattened = new JSONObject(lower.toString());
-
-            // then iterate over upper claims/keys
             for(Iterator<String> iter = upper.keys(); iter.hasNext();) {
                 String claim_name = iter.next();
-
-                // if the claim is marked as "use_lower", just ignore it as we will use lower's one
                 if (Arrays.asList(use_lower).contains(claim_name))
                     continue;
 
-                // if the claim does not exist on lower, or it is marked as "use_upper", or is a
-                // subset of lower, then use upper's one
+                /* If the claim does not exist on lower, or it is marked as "use_upper", or is a
+                   subset of lower, then use upper's one -> OK */
                 if (lower.opt(claim_name) == null
-                    || Arrays.asList(use_upper).contains(claim_name)
-                    || is_subset(upper.get(claim_name), lower.get(claim_name))) {
+                        || Arrays.asList(use_upper).contains(claim_name)
+                        || is_subset(upper.get(claim_name), lower.get(claim_name))) {
                     flattened.put(claim_name, upper.get(claim_name));
                 }
 
-                // else, there is a policy breach that needs to be reported
+                /* Else -> policy breach */
                 else {
                     throw new JSONException("Policy breach with claim: " + claim_name
                         + ". Lower value=" + lower.get(claim_name)
@@ -217,129 +216,103 @@ public class FederatedAuthorizationServiceConfiguration extends AuthorizationSer
          * @throws BadJOSEException when the JWT is not valid
          * @throws JOSEException when the signature cannot be validated
          */
-        private void verify_signature(SignedJWT signedJWT, JWKSet keys) throws BadJOSEException, JOSEException {
-            // TODO: I might want to change this to having a boolean return
+        private void verify_signature(SignedJWT signedJWT, JWKSet keys)
+                throws BadJOSEException, JOSEException {
             ConfigurableJWTProcessor jwtProcessor = new DefaultJWTProcessor();
-            JWSKeySelector keySelector = new JWSVerificationKeySelector(signedJWT.getHeader().getAlgorithm(),
+            JWSKeySelector keySelector = new JWSVerificationKeySelector(
+                signedJWT.getHeader().getAlgorithm(),
                 new ImmutableJWKSet(keys));
             DefaultJWTClaimsVerifier cverifier = new DefaultJWTClaimsVerifier();
-            // allow some clock skew as Roland's examples are somewhat static
-            cverifier.setMaxClockSkew(5000000);
+            /* Allow some clock skew as testing platform examples are static */
+            cverifier.setMaxClockSkew(50000000);
             jwtProcessor.setJWTClaimsSetVerifier(cverifier);
             jwtProcessor.setJWSKeySelector(keySelector);
             jwtProcessor.process(signedJWT, null);
         }
 
         /**
-         * Collects inner metadata statements built upon the contents of
-         *      the "metadata_statements" or "metadata_statement_uris" claims,
-         *      including simple verifications such as both of them cannot appear at the same time.
+         * Collects inner metadata statement for a specific FO
          * @param payload Metadata statement containing inner metadata statements
-         * @return A JSONArray with the list of inner metadata statements
-         * @throws JSONException when "metadata_statements" and "metadata_statement_uris" appear at
-         *      the same time
+         * @return A MS for the specified FO. Null if not found
          * @throws IOException when a "metadata_statement_uris" key cannot be downloaded
+         * @throws JSONException when a JSON exception occurs
          */
-        private JSONArray get_metadata_statements(JSONObject payload) throws JSONException, IOException {
-            JSONArray msl = payload.optJSONArray("metadata_statements");
+        private String get_metadata_statement(JSONObject payload, String fed_op)
+                throws IOException, JSONException {
+            JSONObject ms = payload.optJSONObject("metadata_statements");
             JSONObject ms_uris = payload.optJSONObject("metadata_statement_uris");
-
-            // if there is a "metadata_statements" claim, just return it as it already has the
-            // format we want
-            if (msl != null){
-                // If there is a "metadata_statement_uris" key, raise error
-                if (ms_uris != null) {
-                    throw new JSONException("metadata_statements and metadata_statement_uris cannot " +
-                        "be present at the same time");
-                }
-                return msl;
-            }
-
-            // if there is not a "metadata_statements" nor "metadata_statement_uris" claim, return
-            // an empty JSONArray
-            if (ms_uris == null)
-                return new JSONArray();
-
-            // else, if there is a "metadata_statement_uris", iterate over all the URIs,
-            // download them, and build a JSONArray with them
-            JSONArray result = new JSONArray();
-            for(Iterator<String> iter = ms_uris.keys(); iter.hasNext();) {
-                String key = iter.next();
-                HttpURLConnection conn = mConnectionBuilder.openConnection(JsonUtil.getUri(ms_uris, key));
+            if (ms != null && ms.has(fed_op))
+                return ms.getString(fed_op);
+            if (ms_uris != null && ms_uris.has(fed_op)) {
+                HttpURLConnection conn = mConnectionBuilder.openConnection(
+                    JsonUtil.getUri(ms_uris, fed_op));
                 conn.setRequestMethod("GET");
                 conn.setDoInput(true);
                 conn.connect();
                 InputStream is = conn.getInputStream();
-                result.put(Utils.readInputStream(is));
+                return Utils.readInputStream(is);
             }
-            return result;
+            return null;
         }
 
         /**
-         * Verifies a compounded MS, gathering inner signing keys and using them to verify outer
-         *      signatures.
-         * @param ms_jwt JWT representing a signed metadata statement
+         * Decodes, verifies and flattens a compounded MS for a specific federation operator
+         * @param ms_jwt Encoded JWT representing a signed metadata statement
          * @return A JSONObject (dict) with a entry per federation operator with the corresponding
-         *      flattened and verified MS
+         * flattened and verified MS
          * @throws IOException
          */
-        private JSONObject verify_ms(String ms_jwt) {
+        private JSONObject verify_ms(String ms_jwt, String fed_op)
+                throws JSONException, BadJOSEException, JOSEException, ParseException, IOException {
             try {
-                // Parse the signed JWT
+                /* Parse the signed JWT */
                 SignedJWT signedJWT = SignedJWT.parse(ms_jwt);
 
-                // Create an empty JWKS to store gathered keys from the inner MS
+                /* Create an empty JWKS to store gathered keys from the inner MSs */
                 JWKSet keys = new JWKSet();
 
-                // convert nimbus JSON object to org.json.JSONObject for simpler processing
+                /* Convert nimbus JSON object to org.json.JSONObject for simpler processing */
                 JSONObject payload = new JSONObject(signedJWT.getPayload().toString());
 
                 Log.d("FED", "Inspecting MS signed by: " + payload.getString("iss")
                     + " with KID:" + signedJWT.getHeader().getKeyID());
 
-                // Get inner metadata statements
-                JSONArray statements = get_metadata_statements(payload);
+                /* Collect inner MS (JWT encoded) */
+                String inner_ms_jwt = get_metadata_statement(payload, fed_op);
 
-                // Create an empty list of flattened MS
-                JSONObject flat_msl = new JSONObject();
+                /* This will holld the result of the verification/decoding/flattening */
+                JSONObject result = null;
 
-                // if there are inner MS, iterate over them
-                if (statements.length() > 0) {
-                    for (int i = 0; i < statements.length(); i++) {
-                        // verify each inner MS, obtaining their flattened version (per fedop ID)
-                        JSONObject flat_sub_ms = verify_ms(statements.getString(i));
+                /* If there are more MSs, recursively analyzed them and return the flattened version
+                   with the inner payload */
+                if (inner_ms_jwt != null) {
+                    /* Recursion here to get a verified and flattened version of inner_ms */
+                    JSONObject inner_ms_flattened = verify_ms(inner_ms_jwt, fed_op);
 
-                        // for each flattened MS per fedop ID, add "signing_keys" to keys, and the
-                        // MS to the result list
-                        for(Iterator<String> iter = flat_sub_ms.keys(); iter.hasNext();) {
-                            String fedop = iter.next();
-                            JSONObject sub_ms = flat_sub_ms.getJSONObject(fedop);
-                            JWKSet sub_signing_keys = JWKSet.parse(sub_ms.getJSONObject("signing_keys").toString());
-                            keys.getKeys().addAll(sub_signing_keys.getKeys());
-                            flat_msl.put(fedop, flatten(payload, sub_ms));
-                        }
-                    }
+                    /* add signing keys */
+                    JWKSet inner_ms_sigkeys = JWKSet.parse(
+                        inner_ms_flattened.getJSONObject("signing_keys").toString());
+                    keys.getKeys().addAll(inner_ms_sigkeys.getKeys());
+                    result = flatten(payload, inner_ms_flattened);
                 }
-
-                // if there are no inner metadata statements, this is MS0 and authorized keys must
-                // be used for validating the signature. Flattened list consists just on this
-                // payload and "iss" represents the federation operator ID
+                /* If there are no inner metadata statements, this is MS0 and root keys must
+                   be used for validating the signature.
+                   Result will be the decoded payload */
                 else {
                     keys = JWKSet.parse(this.mAuthorizedKeys.toString());
-                    flat_msl.put(payload.getString("iss"), payload);
+                    result = payload;
                 }
 
-                // verify the signature of the signed JWT using any of the keys collected from the
-                // inner MS
+                /* verify the signature using the collected keys */
                 verify_signature(signedJWT, keys);
                 Log.d("FED", "Successful validation of signature of " + payload.getString("iss")
                     + " with KID:" + signedJWT.getHeader().getKeyID());
-                return flat_msl;
+                return result;
             }
-            // in case of any error, we omit the processing of this JWT, but let the recursive process continue
+            /* In case of any error, print a log message and let the exception flow */
             catch (JOSEException | JSONException | ParseException | IOException | BadJOSEException e) {
                 Log.d("FED", "Error validating MS. Ignoring. " + e.toString());
-                return new JSONObject();
+                throw e;
             }
         }
 
@@ -348,37 +321,29 @@ public class FederatedAuthorizationServiceConfiguration extends AuthorizationSer
          * @param discovery_doc Discovery document as retrieved from .well-known/openid-configuration
          * @return A discovery document which has been validated using a supported federation
          */
-        private JSONObject getFederatedConfiguration(JSONObject discovery_doc) {
+        private JSONObject getFederatedConfiguration(JSONObject discovery_doc, String fed_op) {
             try {
                 // Get the inner metadata statements
-                JSONArray metadata_statements = get_metadata_statements(discovery_doc);
-
-                // if there are, create a dict with the MS corresponding to each FedOP ID
-                if (metadata_statements.length() > 0) {
-                    JSONObject flat_msl = new JSONObject();
-                    for (int i=0; i<metadata_statements.length(); i++) {
-                        String statement = metadata_statements.getString(i);
-                        JSONObject _msl = verify_ms(statement);
-                        for(Iterator<String> iter = _msl.keys(); iter.hasNext();) {
-                            String key = iter.next();
-                            flat_msl.put(key, _msl.get(key));
-                        }
-                    }
-                    Log.d("FED", "We've got a total of " + flat_msl.length()
-                        + " signed and flattened metadata statements");
-                    for(Iterator<String> iter = flat_msl.keys(); iter.hasNext();) {
-                        String key = iter.next();
-                        JSONObject ms = flat_msl.getJSONObject(key);
-                        Log.d("FED", "Statement for federation id " + key);
-                        System.out.println(ms.toString(2));
-                    }
-                    if (flat_msl.length() == 0)
-                        return new JSONObject();
-                    else
-                        return flat_msl;
+                String ms_jwt = get_metadata_statement(discovery_doc, fed_op);
+                if (ms_jwt != null) {
+                    JSONObject ms_flattened = verify_ms(ms_jwt, fed_op);
+                    Log.d("FED", "Statement for federation id " + fed_op);
+                    System.out.println(ms_flattened.toString(2));
+                    return ms_flattened;
                 }
-            } catch (IOException | JSONException e) {
-                Log.d("FED", "There was a problem validating the federated metadata: " + e.toString());
+                else {
+                    Log.d("FED", "There are no metadata_statements for " + fed_op);
+                    JSONObject metadata_statements = discovery_doc.optJSONObject("metadata_statements");
+                    JSONObject metadata_statement_uris = discovery_doc.optJSONObject("metadata_statement_uris");
+                    if (metadata_statements != null)
+                        Log.d("FED", "There are statements for other FOs: " + metadata_statements.keys());
+                    if (metadata_statement_uris != null)
+                        Log.d("FED", "There are statements for other FOs: " + metadata_statement_uris.keys());
+                }
+            } catch (JOSEException | IOException | JSONException | ParseException
+                     | BadJOSEException e) {
+                Log.d("FED", "There was a problem validating the federated metadata: " +
+                    e.toString());
             }
             return new JSONObject();
         }
@@ -395,7 +360,7 @@ public class FederatedAuthorizationServiceConfiguration extends AuthorizationSer
                 is = conn.getInputStream();
                 JSONObject json = new JSONObject(Utils.readInputStream(is));
 
-                JSONObject mss = getFederatedConfiguration(json);
+                JSONObject mss = getFederatedConfiguration(json, "eduroam.org");
                 // get the first one and return
                 for(Iterator<String> iter = mss.keys(); iter.hasNext();) {
                     String key = iter.next();
