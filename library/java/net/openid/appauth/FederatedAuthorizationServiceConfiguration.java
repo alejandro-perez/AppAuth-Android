@@ -360,15 +360,10 @@ public class FederatedAuthorizationServiceConfiguration extends AuthorizationSer
                 is = conn.getInputStream();
                 JSONObject json = new JSONObject(Utils.readInputStream(is));
 
-                JSONObject mss = getFederatedConfiguration(json, "eduroam.org");
-                // get the first one and return
-                for(Iterator<String> iter = mss.keys(); iter.hasNext();) {
-                    String key = iter.next();
-                    json = mss.getJSONObject(key);
-                }
+                JSONObject mss = getFederatedConfiguration(json, "https://swamid.sunet.se");
 
                 AuthorizationServiceDiscovery discovery =
-                        new AuthorizationServiceDiscovery(json);
+                        new AuthorizationServiceDiscovery(mss);
 
                 return new FederatedAuthorizationServiceConfiguration(discovery);
             } catch (IOException ex) {
