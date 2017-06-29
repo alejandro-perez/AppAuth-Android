@@ -42,7 +42,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.text.ParseException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -184,17 +183,20 @@ public class FederatedAuthorizationServiceConfiguration extends AuthorizationSer
             String[] use_lower = {"iss", "sub", "aud", "exp", "nbf", "iat", "jti"};
             String[] use_upper = {"signing_keys", "signing_keys_uri", "metadata_statement_uris",
                                   "kid", "metadata_statements", "usage"};
+            List<String> use_lower_list = Arrays.asList(use_lower);
+            List<String> use_upper_list = Arrays.asList(use_upper);
+
             /* result starts as a copy of lower MS */
             JSONObject flattened = new JSONObject(lower.toString());
             for(Iterator<String> iter = upper.keys(); iter.hasNext();) {
                 String claim_name = iter.next();
-                if (Arrays.asList(use_lower).contains(claim_name))
+                if (use_lower_list.contains(claim_name))
                     continue;
 
                 /* If the claim does not exist on lower, or it is marked as "use_upper", or is a
                    subset of lower, then use upper's one -> OK */
                 if (lower.opt(claim_name) == null
-                        || Arrays.asList(use_upper).contains(claim_name)
+                        || use_upper_list.contains(claim_name)
                         || is_subset(upper.get(claim_name), lower.get(claim_name))) {
                     flattened.put(claim_name, upper.get(claim_name));
                 }
