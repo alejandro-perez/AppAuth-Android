@@ -262,7 +262,7 @@ public class FederatedAuthorizationServiceConfiguration extends AuthorizationSer
          * @param ms_jwt Encoded JWT representing a signed metadata statement
          * @return A JSONObject (dict) with a entry per federation operator with the corresponding
          * flattened and verified MS
-         * @throws IOException
+         * @throws IOException Thrown when some network resource could not be obtained
          */
         private JSONObject verify_ms(String ms_jwt, String fed_op)
                 throws JSONException, BadJOSEException, JOSEException, ParseException, IOException {
@@ -282,8 +282,8 @@ public class FederatedAuthorizationServiceConfiguration extends AuthorizationSer
                 /* Collect inner MS (JWT encoded) */
                 String inner_ms_jwt = get_metadata_statement(payload, fed_op);
 
-                /* This will holld the result of the verification/decoding/flattening */
-                JSONObject result = null;
+                /* This will hold the result of the verification/decoding/flattening */
+                JSONObject result;
 
                 /* If there are more MSs, recursively analyzed them and return the flattened version
                    with the inner payload */
@@ -301,7 +301,7 @@ public class FederatedAuthorizationServiceConfiguration extends AuthorizationSer
                    be used for validating the signature.
                    Result will be the decoded payload */
                 else {
-                    keys = JWKSet.parse(this.mAuthorizedKeys.toString());
+                    keys = JWKSet.parse(this.mAuthorizedKeys.getJSONObject(fed_op).toString());
                     result = payload;
                 }
 
@@ -323,24 +323,29 @@ public class FederatedAuthorizationServiceConfiguration extends AuthorizationSer
          * @param discovery_doc Discovery document as retrieved from .well-known/openid-configuration
          * @return A discovery document which has been validated using a supported federation
          */
-        private JSONObject getFederatedConfiguration(JSONObject discovery_doc, String fed_op) {
+        private JSONObject getFederatedConfiguration(JSONObject discovery_doc) {
             try {
-                // Get the inner metadata statements
-                String ms_jwt = get_metadata_statement(discovery_doc, fed_op);
-                if (ms_jwt != null) {
-                    JSONObject ms_flattened = verify_ms(ms_jwt, fed_op);
-                    Log.d("FED", "Statement for federation id " + fed_op);
-                    System.out.println(ms_flattened.toString(2));
-                    return ms_flattened;
+                // Get the inner metadata statement for the first trusted FO
+                for (Iterator<String> it = this.mAuthorizedKeys.keys(); it.hasNext();){
+                    String fed_op = it.next();
+                    String ms_jwt = get_metadata_statement(discovery_doc, fed_op);
+                    if (ms_jwt != null) {
+                        JSONObject ms_flattened = verify_ms(ms_jwt, fed_op);
+                        Log.d("FED", "Statement for federation id " + fed_op);
+                        System.out.println(ms_flattened.toString(2));
+                        return ms_flattened;
+                    }
                 }
-                else {
-                    Log.d("FED", "There are no metadata_statements for " + fed_op);
-                    JSONObject metadata_statements = discovery_doc.optJSONObject("metadata_statements");
-                    JSONObject metadata_statement_uris = discovery_doc.optJSONObject("metadata_statement_uris");
-                    if (metadata_statements != null)
-                        Log.d("FED", "There are statements for other FOs: " + metadata_statements.keys());
-                    if (metadata_statement_uris != null)
-                        Log.d("FED", "There are statements for other FOs: " + metadata_statement_uris.keys());
+
+                Log.d("FED", "There are no metadata_statements for any trusted FO");
+                JSONObject metadata_statements = discovery_doc.optJSONObject("metadata_statements");
+                JSONObject metadata_statement_uris = discovery_doc.optJSONObject("metadata_statement_uris");
+                if (metadata_statements != null || metadata_statement_uris != null) {
+                    Log.d("FED", "There are statements for other FOs");
+                    for (Iterator<String> it = metadata_statements.keys(); it.hasNext();)
+                        Log.d("FED", "FO: " + it.next());
+                    for (Iterator<String> it = metadata_statement_uris.keys(); it.hasNext();)
+                        Log.d("FED", "FO (uri): " + it.next());
                 }
             } catch (JOSEException | IOException | JSONException | ParseException
                      | BadJOSEException e) {
@@ -362,7 +367,7 @@ public class FederatedAuthorizationServiceConfiguration extends AuthorizationSer
                 is = conn.getInputStream();
                 JSONObject json = new JSONObject(Utils.readInputStream(is));
 
-                JSONObject mss = getFederatedConfiguration(json, "https://swamid.sunet.se");
+                JSONObject mss = getFederatedConfiguration(json);
 
                 AuthorizationServiceDiscovery discovery =
                         new AuthorizationServiceDiscovery(mss);

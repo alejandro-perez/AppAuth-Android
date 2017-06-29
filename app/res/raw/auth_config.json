@@ -2,29 +2,44 @@
   "client_id": "",
   "redirect_uri": "net.openid.appauthdemo:/oauth2redirect",
   "authorization_scope": "openid email profile",
-  "discovery_uri": "http://alex.inf.um.es:9000/.well-known/openid-configuration",
+  "discovery_uri": "https://alex.inf.um.es:8080/foo/rp-sms-policy-err-l2/.well-known/openid-configuration",
   "authorization_endpoint_uri": "",
   "token_endpoint_uri": "",
   "registration_endpoint_uri": "",
   "https_required": false,
   "authorized_keys": {
-    "keys": [
-      {
-        "iss": "https://edugain.com",
-        "e": "AQAB",
-        "kid": "rtxKspV16amoI4xgoG8KfpEj0_fK0g12UVwjqQRJTBA",
-        "kty": "RSA",
-        "n": "vUcGBYUJtBICLncZfIwkMbsXZmomhcWC38znocxmcWyGaghfR5xVI8DIkC2bG-ToSQZB8MuITORFYwoO_pwvdkZaS3mJwFe7XRtcYJpdCQbe-wm2jaZ6Uy09rbLzErHuxky19eYmo7KQHJvV8NxHG0oH7vJAJQ6Los9E5CNJNzDpHYQhrDlBadwxc-B4gNgg7PePAYBoIWBved65kZrUcc-T7nCwzBH5HUPbj8cLfgIrKHn9cIUcSbYSCSxK1N7CtdZKdq9647OcdQAc_q0c2c5_SlQa16-2vJ4gFIGx6tNpXEGH8VNGXIYejX-zVM0Sh7TNBa1c-JRHuzrL6Sv15w",
-        "use": "sig"
-      },
-      {
-        "iss": "https://swamid.sunet.se",
-        "e": "AQAB",
-        "kid": "R3wo1d6yCqLEW-OWF7oLA0korje6cmcUx5_FDLZ8ntw",
-        "kty": "RSA",
-        "n": "vxhdGPRS3dC-RAH1nt-jt933bbKfa0gnAoOAKQ5dtTsl9F9_5FNazkxsixfu0AGwQnsjQz4zPYbhmiQpP0cBhlNY8Q_sE2FV9yISfRyEtMoDGk9d0IQx6pG8_-fT8vUIp53lWnnVCr1Sc-bTO7Fe7E39TPkzh4eJHHRjzj2aT6oG5U8eCcw7h702SEB-9Z3dneGnRc1W4KDo_PXkkiAmh2zuLsGqXv0YEg_16pVEIJ0IPIVdfkKW1S9GsViNBzBsKEhPFjGcge75WocGz0QSulmGfRLg53c8XpdE7LCaydsakyiefSlH8srEq9xucDpPpfmbe9KEWM75NuUjvpbzQw",
-        "use": "sig"
-      }
-    ]
+    "https://edugain.com": {
+      "keys": [
+        {
+          "e": "AQAB",
+          "kid": "ck8yJKny9s2dGavjQ4NMZYEIiExaPOEjTIygCz1OnS0",
+          "kty": "RSA",
+          "n": "s0juoO0JJBd1u0oLkML71tXfyQv_Re7tD0inu8jzshMg-97DQjajoCyKfXgSmx0mVcBETE3wKFHeEShH4gDZDdlvrBFciHi7SmlJabgznu4rairfHHrBr2H3HwL6Vp7OyUkQLVUkmAqTR_ZUuNXnkyr3SQ0PjVrhLQQJ60RFHmw8AAer-cIgJDzpwiSG7Lh6u9PqufDw2-Go_xqEvyMvEFdyxbRdWmwCRHHNWn2ICU-1avfKt6eF8z-WDsThG4FvOiU3tWR45hLXUM4r78JznHsbCNVGXESsABgdbyDH_QUuhXFiu3_onzeKXfl7YOg3jMxSZXYo5-opNToOKl0ILQ",
+          "use": "sig"
+        }
+      ]
+    },
+    "https://swamid.sunet.se": {
+      "keys": [
+        {
+          "e": "AQAB",
+          "kid": "5kxfxoFzKY-oNRf5KfbIv23x6bY73_41qYmgfxpabGs",
+          "kty": "RSA",
+          "n": "hBgmjxbY6HLJLnoe_DwDGxMX3lUUD0Rjf0e2M75_C2TXN29Im77XsFNkTwKaMie_Dnj4eTTgJu6whXbQpUhoNm4aOjYqkxJV9KyMwOT_M23wX8sds4taHz_0wtQGjUZpUw-sIAot4WLowLyLJOGyiIYQ47l4uBBtOinMzTN_G6-AKE67x6-76bjjnoXz3qF7aanBtPunbVruE6vDv7DJ1nO_oYxhstaCih9oxrMmXD990-yAtGn9JhUuOOQtyXDf4e9BuByKf0JcjELMizwKhv9hQMSgFXhI9Vnt7ksjXYmnUU0PkaRm7ju6jdBhBSJyzqnw-NkdQLQrZPFBM2Dssw",
+          "use": "sig"
+        }
+      ]
+    },
+    "https://example.com": {
+      "keys": [
+        {
+          "e": "AQAB",
+          "kid": "IE9j7bhLiWnP9mSaC90_tEYZ0VLWplexcRXILgyDlIk",
+          "n": "orhW0TRv1yjiuvjBnmlrB1kAMPqN0G9-P1xt49kSQcPPvGrUZv4TolTs86voRo9TNAUHU1jN1P55WRiJRkBTEajFg5vl9tASWNX0Pk8wYUQHnR-miJS-fUl8IU-QjvdwswhBTFQNfMIfh9qNMtRSR3d-7e2u78109w_DQ_Z9EOwHG9QpXIft33MSvIh3AZaN7yA5SQp3QQEZtnhNgk3BLr6oA0YD55oaa7nv20THFtlRuczlXZKzJ10vmkmsTrCKTVY1bAUcFTyiNrDRwEaffhPxX_b8RsYMfP4j7GP2NopjsGbz-Kv3PQjoUHRJDerDE88iCMcKss-iGNkeg23CMQ",
+          "kty": "RSA",
+          "use": "sig"
+        }
+      ]
+    }
   }
 }
