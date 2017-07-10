@@ -246,6 +246,7 @@ public class FederatedAuthorizationServiceConfiguration extends AuthorizationSer
             if (ms != null && ms.has(fed_op))
                 return ms.getString(fed_op);
             if (ms_uris != null && ms_uris.has(fed_op)) {
+                Log.d("FED", "Getting MS from " + JsonUtil.getUri(ms_uris, fed_op));
                 HttpURLConnection conn = mConnectionBuilder.openConnection(
                     JsonUtil.getUri(ms_uris, fed_op));
                 conn.setRequestMethod("GET");
@@ -352,7 +353,7 @@ public class FederatedAuthorizationServiceConfiguration extends AuthorizationSer
                 Log.d("FED", "There was a problem validating the federated metadata: " +
                     e.toString());
             }
-            return new JSONObject();
+            return null;
         }
 
         @Override
@@ -368,9 +369,11 @@ public class FederatedAuthorizationServiceConfiguration extends AuthorizationSer
                 JSONObject json = new JSONObject(Utils.readInputStream(is));
 
                 JSONObject mss = getFederatedConfiguration(json);
+                if (mss != null)
+                    json = mss;
 
                 AuthorizationServiceDiscovery discovery =
-                        new AuthorizationServiceDiscovery(mss);
+                        new AuthorizationServiceDiscovery(json);
 
                 return new FederatedAuthorizationServiceConfiguration(discovery);
             } catch (IOException ex) {
