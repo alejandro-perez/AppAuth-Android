@@ -49,6 +49,7 @@ import net.openid.appauth.AuthorizationService;
 import net.openid.appauth.AuthorizationServiceConfiguration;
 import net.openid.appauth.ClientSecretBasic;
 import net.openid.appauth.FederatedAuthorizationServiceConfiguration;
+import net.openid.appauth.FederatedRegistrationRequest;
 import net.openid.appauth.RegistrationRequest;
 import net.openid.appauth.RegistrationResponse;
 import net.openid.appauth.ResponseTypeValues;
@@ -263,7 +264,7 @@ public final class LoginActivity extends AppCompatActivity {
         runOnUiThread(() -> displayLoading("Dynamically registering client"));
         Log.i(TAG, "Dynamically registering client");
 
-        RegistrationRequest registrationRequest = new RegistrationRequest.Builder(
+        RegistrationRequest registrationRequest = new FederatedRegistrationRequest.Builder(
                 mAuthStateManager.getCurrent().getAuthorizationServiceConfiguration(),
                 Collections.singletonList(mConfiguration.getRedirectUri()))
                 .setTokenEndpointAuthenticationMethod(ClientSecretBasic.NAME)

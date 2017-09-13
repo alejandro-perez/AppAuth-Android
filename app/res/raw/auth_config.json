@@ -2,11 +2,15 @@
   "client_id": "",
   "redirect_uri": "net.openid.appauthdemo:/oauth2redirect",
   "authorization_scope": "openid email profile",
-  "discovery_uri": "https://alex.inf.um.es:8080/foo/rp-sms-policy-err-l2/.well-known/openid-configuration",
+  "discovery_uri": "https://alex.inf.um.es:8080/foo/rp-sms-mutiple-l1/.well-known/openid-configuration",
+  //"discovery_uri": "https://rp.certification.openid.net:8080/app_auth_android/rp-response_type-code/.well-known/openid-configuration",
   "authorization_endpoint_uri": "",
   "token_endpoint_uri": "",
   "registration_endpoint_uri": "",
   "https_required": false,
+  "metadata_statements": {
+    "https://swamid.sunet.se": "eyJraWQiOiI1a3hmeG9GektZLW9OUmY1S2ZiSXYyM3g2Ylk3M180MXFZbWdmeHBhYkdzIiwiYWxnIjoiUlMyNTYifQ.eyJraWQiOiAiNWt4ZnhvRnpLWS1vTlJmNUtmYkl2MjN4NmJZNzNfNDFxWW1nZnhwYWJHcyIsICJleHAiOiAxNTAwMjg4Mjk1LCAiaXNzIjogImh0dHBzOi8vc3dhbWlkLnN1bmV0LnNlIiwgImp0aSI6ICI0OWVjNzdhOGExMGM0ZjhhYjNhYTdmM2Q3YjI0NzBkZCIsICJzaWduaW5nX2tleXMiOiB7ImtleXMiOiBbeyJlIjogIkFRQUIiLCAibiI6ICJ2eGhkR1BSUzNkQy1SQUgxbnQtanQ5MzNiYktmYTBnbkFvT0FLUTVkdFRzbDlGOV81Rk5hemt4c2l4ZnUwQUd3UW5zalF6NHpQWWJobWlRcFAwY0JobE5ZOFFfc0UyRlY5eUlTZlJ5RXRNb0RHazlkMElReDZwRzhfLWZUOHZVSXA1M2xXbm5WQ3IxU2MtYlRPN0ZlN0UzOVRQa3poNGVKSEhSanpqMmFUNm9HNVU4ZUNjdzdoNzAyU0VCLTlaM2RuZUduUmMxVzRLRG9fUFhra2lBbWgyenVMc0dxWHYwWUVnXzE2cFZFSUowSVBJVmRma0tXMVM5R3NWaU5CekJzS0VoUEZqR2NnZTc1V29jR3owUVN1bG1HZlJMZzUzYzhYcGRFN0xDYXlkc2FreWllZlNsSDhzckVxOXh1Y0RwUHBmbWJlOUtFV003NU51VWp2cGJ6UXciLCAia2lkIjogIlIzd28xZDZ5Q3FMRVctT1dGN29MQTBrb3JqZTZjbWNVeDVfRkRMWjhudHciLCAidXNlIjogInNpZyIsICJrdHkiOiAiUlNBIn1dfSwgInJlZGlyZWN0X3VyaXMiOiBbIm5ldC5vcGVuaWQuYXBwYXV0aGRlbW86L29hdXRoMnJlZGlyZWN0Il0sICJhcHBsaWNhdGlvbl90eXBlIjogIm5hdGl2ZSIsICJpYXQiOiAxNTAwMjg0Njk1LCAidG9rZW5fZW5kcG9pbnRfYXV0aF9tZXRob2QiOiAiY2xpZW50X3NlY3JldF9iYXNpYyJ9.Qrr0gzlud_D0ok4kTaSLSDYx3pn_J2beCjepRj-0zJVIoQbzudMEad2eBItL6Y6gIZcmvEm7VDZSCGHW1dLOtXdH5xeC0fI4G0VSKHHOyl4SvG60zDfnXFbS0P5oGqT12JH9otGNOSwf3DDnDhzciarkkx5M_QU_Kz9NZPTqQJOg9zdePOfahOXPBQFFOFVKHTpRPunoqIXLBuj-l_6i2OT_fCzbKorbt5pUtox5T35ABg9Uy33cwXBMrOTeyVP-U9uFAve3rTmgWp4A8vGh6g8Yg4aDjukOjJQhWRybiPr6JvkywTYDKnOrLHgNoktq1XqVFjatD7Ge0Ts2JqdyiA"
+  },
   "authorized_keys": {
     "https://edugain.com": {
       "keys": [

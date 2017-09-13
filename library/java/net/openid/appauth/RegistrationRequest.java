@@ -312,7 +312,7 @@ public class RegistrationRequest {
         }
     }
 
-    private RegistrationRequest(
+    protected RegistrationRequest(
             @NonNull AuthorizationServiceConfiguration configuration,
             @NonNull List<Uri> redirectUris,
             @Nullable List<String> responseTypes,
@@ -366,7 +366,7 @@ public class RegistrationRequest {
         return jsonSerialize().toString();
     }
 
-    private JSONObject jsonSerializeParams() {
+    protected JSONObject jsonSerializeParams() {
         JSONObject json = new JSONObject();
         JsonUtil.put(json, PARAM_REDIRECT_URIS, JsonUtil.toJsonArray(redirectUris));
         JsonUtil.put(json, PARAM_APPLICATION_TYPE, applicationType);
@@ -380,6 +380,7 @@ public class RegistrationRequest {
         JsonUtil.putIfNotNull(json, PARAM_SUBJECT_TYPE, subjectType);
         JsonUtil.putIfNotNull(json, PARAM_TOKEN_ENDPOINT_AUTHENTICATION_METHOD,
                 tokenEndpointAuthenticationMethod);
+
         return json;
     }
 
