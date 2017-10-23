@@ -16,9 +16,10 @@ android.buildTypes.debug.manifestPlaceholders = [
 ];
 
 dependencies {
-    compile group: 'com.nimbusds', name: 'nimbus-jose-jwt', version: '4.34.2'
+    compile 'com.nimbusds:nimbus-jose-jwt:4.34.2'
     compile "com.android.support:customtabs:${rootProject.supportLibVersion}"
-    apply from: '../config/testdeps.gradle', to:it
+    apply from: '../config/testdeps.gradle', to: it
+    compile files('libs/oidcfederatedmetadatastatement-1.1-SNAPSHOT.jar')
 }
 
 apply from: '../config/style.gradle'
