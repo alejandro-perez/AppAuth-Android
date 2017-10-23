@@ -274,7 +274,8 @@ public final class LoginActivity extends AppCompatActivity {
             AuthorizationServiceConfiguration config, AuthorizationException ex) {
         if (config == null) {
             Log.i(TAG, "Failed to retrieve discovery document", ex);
-            displayError("Failed to retrieve discovery document: " + ex.getMessage(), true);
+            displayError("Failed to retrieve discovery document: " + ex.getMessage() +
+                "\nPlease check the configured discovery_uri value:\n" + mConfiguration.getDiscoveryUri(), true);
             return;
         }
 
