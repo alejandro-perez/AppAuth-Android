@@ -2,12 +2,12 @@
   "client_id": "",
   "redirect_uri": "net.openid.appauthdemo:/oauth2redirect",
   "authorization_scope": "openid email profile",
-  "discovery_uri": "https://jra3-oidc-minifed.lxc:8777/.well-known/openid-configuration",
+  "discovery_uri": "https://oidcfed.inf.um.es:8777/.well-known/openid-configuration",
   //"discovery_uri": "https://rp.certification.openid.net:8080/app_auth_android/rp-response_type-code/.well-known/openid-configuration",
   "authorization_endpoint_uri": "",
   "token_endpoint_uri": "",
   "registration_endpoint_uri": "",
-  "https_required": false,
+  "https_required": true,
   "authorized_keys": {
     "https://edugain.com": {
       "keys": [
@@ -35,6 +35,13 @@
           "kid": "PJ632c0X_IVSmHVvvDQ_JWC5qmkBom-MyC1j02Y2SXE",
           "n": "u-3Wm6IOE-EbZ8J-cE_bSLGsY1dLgaaaKdwVrboUdGiRofmW2COfYj_ftp7WtmMdVoJ9LhOacMF7Pr1Bx5xnhZcRVla1hGqAakm0dQXHI5RQMd8I1bntvdMOY_6XY_NgC9Gx_Yt2mXFyS4HdOtEnhTHYAg1kGbqXfJBiX9AHhbZUUSxrF-YTJhZK26wKOZKRlxoKrFFyoIdq51Bo7XCryGYiA9mI9oLsSULBhnmx84VBolpKblr6iqAYAUrwTDdXMUxWApE7RgcYsOj8WV8npB_Tcz-5vTVSkSGCS95vgnX_0eCX5h_3kyFnNVHvczxkbbjBwaTzRJ7pYgpwOnwEpw",
           "e": "AQAB"
+        },
+        {
+          "use": "sig",
+          "e": "AQAB",
+          "kty": "RSA",
+          "kid": "DQBaJ_X3Z45GBxNudmhTD6FezSmgskbdg1Ch0LP59Zw",
+          "n": "nRWtrfhxkBR9mrUDFnH5QN5V5Mo6AcLq8odKIvPIYpz3d1fucMvk2jRdq0WDnXjmWgbz-YcRoB9Q_hjQiYa86iYVt4HD9e22ookgmEY_E_Xf_olD8VBGo4RrluS2jJ4_VFAWiy1yKnuxWyCsNsJbxOldLocxmr8xcc-bAS7gn-wMVgEQsHr_GeiE2zagA4SiL_TTW8T7_PrCu7vjNvnybot9m7vAtk9FM0-3u_Pirjr0sRJ6dM58QSTH0mGJANIVQREAXwm-CeL8PBvQCGM0NrncL2WSw3EnG8_x_NBOV-DEZbb7Hxlu6IWTuIXinNognLfhauXBObXV7UNhDFLunQ"
         }
       ]
     },

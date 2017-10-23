@@ -312,7 +312,7 @@ public final class LoginActivity extends AppCompatActivity {
         runOnUiThread(() -> displayLoading("Dynamically registering client"));
         Log.i(TAG, "Dynamically registering client");
 
-        RegistrationRequest registrationRequest = new FederatedRegistrationRequest.Builder(
+        RegistrationRequest registrationRequest = new RegistrationRequest.Builder(
                 mAuthStateManager.getCurrent().getAuthorizationServiceConfiguration(),
                 Collections.singletonList(mConfiguration.getRedirectUri()))
                 .setTokenEndpointAuthenticationMethod(ClientSecretBasic.NAME)

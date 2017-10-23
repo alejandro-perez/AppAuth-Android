@@ -184,6 +184,7 @@ public class FederatedAuthorizationServiceConfiguration extends AuthorizationSer
             String[] use_upper = {"signing_keys", "signing_keys_uri", "metadata_statement_uris",
                                   "kid", "metadata_statements", "usage"};
             List<String> use_lower_list = Arrays.asList(use_lower);
+
             List<String> use_upper_list = Arrays.asList(use_upper);
 
             /* result starts as a copy of lower MS */
