@@ -378,6 +378,9 @@ public class AuthorizationServiceConfiguration {
                     JSONObject federated_ms = getFederatedConfiguration(json, this.mAuthorizedKeys);
                     if (federated_ms != null)
                         json = federated_ms;
+                    else
+                        throw new AuthorizationServiceDiscovery.MissingArgumentException(
+                            "Validation of federated MS failed");
                 }
 
                 AuthorizationServiceDiscovery discovery =
