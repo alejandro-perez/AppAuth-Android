@@ -3,7 +3,6 @@
   "redirect_uri": "net.openid.appauthdemo:/oauth2redirect",
   "authorization_scope": "openid email profile",
   "discovery_uri": "https://oidcfed.inf.um.es:8777/.well-known/openid-configuration",
-  //"discovery_uri": "https://rp.certification.openid.net:8080/app_auth_android/rp-response_type-code/.well-known/openid-configuration",
   "authorization_endpoint_uri": "",
   "token_endpoint_uri": "",
   "registration_endpoint_uri": "",
