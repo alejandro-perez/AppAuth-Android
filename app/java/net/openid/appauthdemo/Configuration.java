@@ -63,13 +63,13 @@ public final class Configuration {
     private String mClientId;
     private String mScope;
     private Uri mRedirectUri;
-    private Uri mDiscoveryUri;
     private Uri mAuthEndpointUri;
     private Uri mTokenEndpointUri;
     private Uri mRegistrationEndpointUri;
     private boolean mHttpsRequired;
 
     private JSONObject mAuthorizedKeys;
+    private JSONArray mAvailableOps;
 
     public static Configuration getInstance(Context context) {
         Configuration config = sInstance.get();
@@ -140,11 +140,6 @@ public final class Configuration {
     }
 
     @Nullable
-    public Uri getDiscoveryUri() {
-        return mDiscoveryUri;
-    }
-
-    @Nullable
     public Uri getAuthEndpointUri() {
         return mAuthEndpointUri;
     }
@@ -166,6 +161,8 @@ public final class Configuration {
     public JSONObject getAuthorizedKeys() {
         return mAuthorizedKeys;
     }
+
+    public JSONArray getAvailableOps() { return mAvailableOps; }
 
     public ConnectionBuilder getConnectionBuilder() {
         if (isHttpsRequired()) {
@@ -202,6 +199,10 @@ public final class Configuration {
         if (mAuthorizedKeys == null)
             mAuthorizedKeys = new JSONObject();
 
+        mAvailableOps = mConfigJson.optJSONArray("available_ops");
+        if (mAvailableOps == null)
+            mAvailableOps = new JSONArray();
+
         if (!isRedirectUriRegistered()) {
             throw new InvalidConfigurationException(
                     "redirect_uri is not handled by any activity in this app! "
@@ -210,7 +211,7 @@ public final class Configuration {
                             + "exists in your app manifest.");
         }
 
-        if (getConfigString("discovery_uri") == null) {
+        if (mAvailableOps.length() == 0) {
             mAuthEndpointUri = getRequiredConfigWebUri("authorization_endpoint_uri");
 
             mTokenEndpointUri = getRequiredConfigWebUri("token_endpoint_uri");
@@ -218,8 +219,6 @@ public final class Configuration {
             if (mClientId == null) {
                 mRegistrationEndpointUri = getRequiredConfigWebUri("registration_endpoint_uri");
             }
-        } else {
-            mDiscoveryUri = getRequiredConfigWebUri("discovery_uri");
         }
 
         mHttpsRequired = mConfigJson.optBoolean("https_required", true);

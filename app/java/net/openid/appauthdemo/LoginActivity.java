@@ -17,6 +17,7 @@ package net.openid.appauthdemo;
 import android.annotation.TargetApi;
 import android.app.PendingIntent;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -37,6 +38,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemSelectedListener;
+import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.TextView;
@@ -107,6 +109,8 @@ public final class LoginActivity extends AppCompatActivity {
     @NonNull
     private BrowserMatcher mBrowserMatcher = AnyBrowserMatcher.INSTANCE;
 
+    private String mSelectedOp = null;
+
     private static void disableSSLCertificateChecking() {
         TrustManager[] trustAllCerts = new TrustManager[] { new X509TrustManager() {
             public X509Certificate[] getAcceptedIssuers() {
@@ -142,6 +146,7 @@ public final class LoginActivity extends AppCompatActivity {
             e.printStackTrace();
         }
     }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -173,6 +178,7 @@ public final class LoginActivity extends AppCompatActivity {
         }
 
         configureBrowserSelector();
+        configureOpSelector();
         this.disableSSLCertificateChecking();
 
         if (mConfiguration.hasConfigurationChanged()) {
@@ -234,16 +240,17 @@ public final class LoginActivity extends AppCompatActivity {
         Log.i(TAG, "Initializing AppAuth");
         recreateAuthorizationService();
 
+        /* Alex: disable or it will use the latests known client id
         if (mAuthStateManager.getCurrent().getAuthorizationServiceConfiguration() != null) {
             // configuration is already created, skip to client initialization
             Log.i(TAG, "auth config already established");
             initializeClient();
             return;
-        }
+        } */
 
         // if we are not using discovery, build the authorization service configuration directly
         // from the static configuration values.
-        if (mConfiguration.getDiscoveryUri() == null) {
+        if (mConfiguration.getAvailableOps().length() == 0) {
             Log.i(TAG, "Creating auth config from res/raw/auth_config.json");
             AuthorizationServiceConfiguration config = new AuthorizationServiceConfiguration(
                     mConfiguration.getAuthEndpointUri(),
@@ -259,12 +266,7 @@ public final class LoginActivity extends AppCompatActivity {
         // noinspection WrongThread
         runOnUiThread(() -> displayLoading("Retrieving discovery document"));
         Log.i(TAG, "Retrieving OpenID discovery doc");
-        AuthorizationServiceConfiguration.fetchFromUrl(
-                mConfiguration.getDiscoveryUri(),
-                this::handleConfigurationRetrievalResult,
-                mConfiguration.getConnectionBuilder(),
-                mConfiguration.getAuthorizedKeys()
-            );
+        fetchConfiguration();
     }
 
     @MainThread
@@ -273,10 +275,9 @@ public final class LoginActivity extends AppCompatActivity {
         if (config == null) {
             Log.i(TAG, "Failed to retrieve discovery document", ex);
             displayError("Failed to retrieve discovery document: " + ex.getMessage() +
-                "\nPlease check the configured discovery_uri value:\n" + mConfiguration.getDiscoveryUri(), true);
+                "\nPlease check the configured discovery_uri value:\n" + mSelectedOp, true);
             return;
         }
-
         Log.i(TAG, "Discovery document retrieved");
         mAuthStateManager.replace(new AuthState(config));
         mExecutor.submit(this::initializeClient);
@@ -365,6 +366,47 @@ public final class LoginActivity extends AppCompatActivity {
             @Override
             public void onNothingSelected(AdapterView<?> parent) {
                 mBrowserMatcher = AnyBrowserMatcher.INSTANCE;
+            }
+        });
+    }
+
+    private void fetchConfiguration() {
+        if (mSelectedOp != null) {
+            AuthorizationServiceConfiguration.fetchFromUrl(
+                Uri.parse(mSelectedOp + "/.well-known/openid-configuration"),
+                this::handleConfigurationRetrievalResult,
+                mConfiguration.getConnectionBuilder(),
+                mConfiguration.getAuthorizedKeys()
+            );
+        }
+    }
+
+    /**
+     * Enumerates the OPs configured in the configuration file and populates a spinner, allowing the
+     * demo user to easily test different OPs.
+     */
+    @MainThread
+    private void configureOpSelector() {
+        Spinner spinner = (Spinner) findViewById(R.id.op_selector);
+        String[] items=new String[mConfiguration.getAvailableOps().length()];
+        for(int i=0; i<items.length; i++) {
+            items[i]=mConfiguration.getAvailableOps().optString(i);
+        }
+        ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_dropdown_item, items);
+        spinner.setAdapter(adapter);
+        spinner.setOnItemSelectedListener(new OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                String selection = adapter.getItem(position);
+                if (selection != null && !selection.equals(mSelectedOp)) {
+                    mSelectedOp = selection;
+                    recreateAuthorizationService();
+                    fetchConfiguration();
+                }
+            }
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+                mSelectedOp = null;
             }
         });
     }

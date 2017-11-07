@@ -41,6 +41,11 @@
             displayed while the discovery document is loaded, and dynamic client registration is
             being negotiated
             -->
+            <Spinner
+                android:id="@+id/op_selector"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
             <LinearLayout
                 android:id="@+id/loading_container"
                 android:layout_width="match_parent"
