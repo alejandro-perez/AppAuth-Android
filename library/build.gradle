@@ -19,7 +19,7 @@ dependencies {
     compile 'com.nimbusds:nimbus-jose-jwt:4.34.2'
     compile "com.android.support:customtabs:${rootProject.supportLibVersion}"
     apply from: '../config/testdeps.gradle', to: it
-    compile files('libs/oidcfederatedmetadatastatement-1.1-SNAPSHOT.jar')
+    compile fileTree(dir: 'libs', include: ['*.jar'])
 }
 
 apply from: '../config/style.gradle'
