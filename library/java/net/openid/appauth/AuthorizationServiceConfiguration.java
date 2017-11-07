@@ -16,6 +16,7 @@ package net.openid.appauth;
 
 import static net.openid.appauth.Preconditions.checkArgument;
 import static net.openid.appauth.Preconditions.checkNotNull;
+import static org.geant.oidcfed.FederatedMetadataStatement.getFederatedConfiguration;
 
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -262,16 +263,46 @@ public class AuthorizationServiceConfiguration {
      * <https://openid.net/specs/openid-connect-discovery-1_0.html>"
      */
     public static void fetchFromUrl(
-            @NonNull Uri openIdConnectDiscoveryUri,
-            @NonNull RetrieveConfigurationCallback callback,
-            @NonNull ConnectionBuilder connectionBuilder) {
+        @NonNull Uri openIdConnectDiscoveryUri,
+        @NonNull RetrieveConfigurationCallback callback,
+        @NonNull ConnectionBuilder connectionBuilder) {
         checkNotNull(openIdConnectDiscoveryUri, "openIDConnectDiscoveryUri cannot be null");
         checkNotNull(callback, "callback cannot be null");
         checkNotNull(connectionBuilder, "connectionBuilder must not be null");
         new ConfigurationRetrievalAsyncTask(
+            openIdConnectDiscoveryUri,
+            connectionBuilder,
+            callback)
+            .execute();
+    }
+
+    /**
+     * Fetch an AuthorizationServiceConfiguration from an OpenID Connect discovery URI.
+     * This version supports federation
+     *
+     * @param openIdConnectDiscoveryUri The OpenID Connect discovery URI
+     * @param connectionBuilder The connection builder that is used to establish a connection
+     *     to the resource server.
+     * @param callback A callback to invoke upon completion
+     * @param authorized_keys Authorized Federation Operators (FO) keys.
+     *
+     * @see "OpenID Connect discovery 1.0
+     * <https://openid.net/specs/openid-connect-discovery-1_0.html>"
+     */
+    public static void fetchFromUrl(
+            @NonNull Uri openIdConnectDiscoveryUri,
+            @NonNull RetrieveConfigurationCallback callback,
+            @NonNull ConnectionBuilder connectionBuilder,
+            @NonNull JSONObject authorized_keys) {
+        checkNotNull(openIdConnectDiscoveryUri, "openIDConnectDiscoveryUri cannot be null");
+        checkNotNull(callback, "callback cannot be null");
+        checkNotNull(connectionBuilder, "connectionBuilder must not be null");
+        checkNotNull(authorized_keys, "authorized_keys must not be null");
+        new ConfigurationRetrievalAsyncTask(
                 openIdConnectDiscoveryUri,
                 connectionBuilder,
-                callback)
+                callback,
+                authorized_keys)
                 .execute();
     }
 
@@ -309,6 +340,7 @@ public class AuthorizationServiceConfiguration {
         private ConnectionBuilder mConnectionBuilder;
         private RetrieveConfigurationCallback mCallback;
         private AuthorizationException mException;
+        private JSONObject mAuthorizedKeys;
 
         ConfigurationRetrievalAsyncTask(
                 Uri uri,
@@ -317,7 +349,17 @@ public class AuthorizationServiceConfiguration {
             mUri = uri;
             mConnectionBuilder = connectionBuilder;
             mCallback = callback;
+            mAuthorizedKeys = null;
             mException = null;
+        }
+
+        ConfigurationRetrievalAsyncTask(
+                Uri uri,
+                ConnectionBuilder connectionBuilder,
+                RetrieveConfigurationCallback callback,
+                JSONObject authorized_keys) {
+            this(uri, connectionBuilder, callback);
+            mAuthorizedKeys = authorized_keys;
         }
 
         @Override
@@ -331,6 +373,12 @@ public class AuthorizationServiceConfiguration {
 
                 is = conn.getInputStream();
                 JSONObject json = new JSONObject(Utils.readInputStream(is));
+
+                if (this.mAuthorizedKeys != null) {
+                    JSONObject federated_ms = getFederatedConfiguration(json, this.mAuthorizedKeys);
+                    if (federated_ms != null)
+                        json = federated_ms;
+                }
 
                 AuthorizationServiceDiscovery discovery =
                         new AuthorizationServiceDiscovery(json);

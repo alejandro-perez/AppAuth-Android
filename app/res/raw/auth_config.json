@@ -6,7 +6,7 @@
   "authorization_endpoint_uri": "",
   "token_endpoint_uri": "",
   "registration_endpoint_uri": "",
-  "https_required": true,
+  "https_required": false,
   "authorized_keys": {
     "https://edugain.com": {
       "keys": [
