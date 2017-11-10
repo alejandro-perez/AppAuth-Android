@@ -2,11 +2,11 @@
   "client_id": "",
   "redirect_uri": "net.openid.appauthdemo:/oauth2redirect",
   "authorization_scope": "openid email profile",
-  "discovery_uri": "https://oidcfed.inf.um.es:8777/.well-known/openid-configuration",
   "available_ops": [
     "https://oidcfed.inf.um.es:8777",
-    "https://alex.inf.um.es:8777",
-    "https://10.0.3.210:8777"
+    "https://agaton-sax.com:8080/foo/rp-sms-single-l0/",
+    "https://agaton-sax.com:8080/foo/rp-sms-policy-err-l1/",
+    "https://agaton-sax.com:8080/foo/rp-sms-wrong-key/"
   ],
   "authorization_endpoint_uri": "",
   "token_endpoint_uri": "",
@@ -21,6 +21,13 @@
           "kty": "RSA",
           "n": "s0juoO0JJBd1u0oLkML71tXfyQv_Re7tD0inu8jzshMg-97DQjajoCyKfXgSmx0mVcBETE3wKFHeEShH4gDZDdlvrBFciHi7SmlJabgznu4rairfHHrBr2H3HwL6Vp7OyUkQLVUkmAqTR_ZUuNXnkyr3SQ0PjVrhLQQJ60RFHmw8AAer-cIgJDzpwiSG7Lh6u9PqufDw2-Go_xqEvyMvEFdyxbRdWmwCRHHNWn2ICU-1avfKt6eF8z-WDsThG4FvOiU3tWR45hLXUM4r78JznHsbCNVGXESsABgdbyDH_QUuhXFiu3_onzeKXfl7YOg3jMxSZXYo5-opNToOKl0ILQ",
           "use": "sig"
+        },
+        {
+          "kid": "2kmUXi6jS9rQ6BzWst2rJGwwXvZSfwRouR1u8ezSpfA",
+          "kty": "RSA",
+          "use": "sig",
+          "n": "wTc569WwiJU6QBPgnSu8rtQTt4Gq-rOX3COcWNIc_wEhlMX3NjQI5ybNvII_D3PCLA_E0hkxKDKlzQ0zx2z8fMrX2XqS8mOZFJyCUzk1eWefvkDPK6mcO4EhEuDsAkZ2pqhYgTKIUg_g-b3FgFwanUPJtnkZzbcTfy4fyVUPdhTXUS4LhvI6B6RTCIpQW1ziygLhDSyglPnSFbhFDsvQFUf3uaF4kc6bgu1LtnUT1VN3WTvMw-MXZuPXiPHu-eUeVmKI29cg1DVzNLqQfPhxwtDhM7FhN1bYbs2Xgl5lLiaYUkc2_5wi0RZUhw5_JLYE5FYPbtvzsUvu76IsMssDUQ",
+          "e": "AQAB"
         }
       ]
     },
@@ -53,6 +60,27 @@
           "kid": "vVwtcTAinXOTTMMdbWH_duoADwklSNeBturmPoo5Ock",
           "kty": "RSA",
           "e": "AQAB"
+        },
+        {
+          "kid": "ihRpWzYYx6yP_Ny3OGoCmBxjl9K1ycs_SrSEVwP8eD8",
+          "kty": "RSA",
+          "use": "sig",
+          "n": "ntIVVOM62XOLscH1C8BfAbr2BL67sW1eWEGokGDUabEqsvAKzZCiQfYMvpnhou6kXhtxXOMttzchGpI2rflElWd581GfyXsHJ1EY8hwFQpJsCJSGdKhFtKBqcTLv5qRyWq4T2Q-WqJuHx0Ph1o2Mu5sk5xwSYbhomKmJTmsi-rCpZHtj30n_COK-nSTW-Pxegd4Z6uqTGF3C56DR1J_-SGnJsIfMAfEV6QSsGeJTQp_aL0n7Uw1kG4u_-1rB928FZBOqT1kPq_qrP-6X3lx_43LqanhOHtt106v_VypfjkVvSzbjOrL0mvkIfsFYN8qmysSLLbVMbIgPxls4MEl9Tw",
+          "e": "AQAB"
+        },
+        {
+          "kid": "3vdnmAAWwnyBu-LzUexMfhj6WjhEGp_JwXIF8It5H-o",
+          "use": "sig",
+          "n": "rLJdoTvGLIMi_OnWFIjr00ZyX9GWNPe54ZqMYSVT1FlB62wYuh4XTJt6zexbq5CwDHdXU7KT13i0Bg4c-cPsUsx5Klnvztl20YisngAVHvBfX7ydWCLA1WLRO9SZxCc9eh3-g9qMRz0KyWRccgF4tjvGhdCN56bSOPES7nV-e7mlVTQDxyJE0SACa19i1HSCgn3fSj4vKZUgFQ1Opa3j47-jeVO8moQpXZoOejWgnpKhukLtQuv0REY1sDYgeZTg0JGbn7kNRMGsIrac14Be1IW0qapY5zMUmsMWHAkyGoxY2HlhCybtvSlLAE--6Qq1Hvg25KBKJKQt2c5Lzq0imw",
+          "kty": "RSA",
+          "e": "AQAB"
+        },
+        {
+          "kty": "RSA",
+          "use": "sig",
+          "kid": "IHsL0_7x056QvZVw8P229F5_ZVTWW5RlNbc37mplUx4",
+          "e": "AQAB",
+          "n": "qTOajpQcdjTv7MSikns010VP-6ew3j0EBOJ-EtHpXHZLiLZR9WBwDKRTtaEScdRiCFv1dJoYT_ByzZ7p-mpHqAEAymGhBzHfgpu0InUBw0qNmmuhclz8J_S0cvTzd1YGxFyy4uDY8iOq9p9M7oQJr7pAEgzePt1uk7SSUzJA24_2M1DqlnWJWmhv3tDGvWXK9iSBXmIsDV8bgC-dCBZVRBrepbmWD8mRQBvGfE-KtHiOThwWRjJJB_FnSeBuk1YbqgK0NBww_Q2uJRQVLF5V4r2a5Gp8jGfOv25Khge5sXvCVjBy5qzyzVWOgo_UPHIpgZqsVvKBl4wJ6dNj1w_UDQ"
         }
       ]
     },
@@ -64,6 +92,13 @@
           "n": "orhW0TRv1yjiuvjBnmlrB1kAMPqN0G9-P1xt49kSQcPPvGrUZv4TolTs86voRo9TNAUHU1jN1P55WRiJRkBTEajFg5vl9tASWNX0Pk8wYUQHnR-miJS-fUl8IU-QjvdwswhBTFQNfMIfh9qNMtRSR3d-7e2u78109w_DQ_Z9EOwHG9QpXIft33MSvIh3AZaN7yA5SQp3QQEZtnhNgk3BLr6oA0YD55oaa7nv20THFtlRuczlXZKzJ10vmkmsTrCKTVY1bAUcFTyiNrDRwEaffhPxX_b8RsYMfP4j7GP2NopjsGbz-Kv3PQjoUHRJDerDE88iCMcKss-iGNkeg23CMQ",
           "kty": "RSA",
           "use": "sig"
+        },
+        {
+          "kid": "7TnWOKF0Znlsf-ok08w7oFL474A4IuxOQqwSIlz3MS4",
+          "kty": "RSA",
+          "use": "sig",
+          "n": "otD_zD70kTHNMKF-SxbB_u9_v4edwGB3vKRfF2WnR2Cq4qqfFEJPb_KuISoiHstSpsgHgs7EDL2P9_0RQcgip_ctYOrISllRBKcLYJ8tOOQENQyJKngoOsm6IkUxPHQ8PVwbTemvZqbvtzC04YwK2c14nmZter9LXwChAZtB80ZzktsUw9_PUcDiR7EyeVh2cSzaZ14dFmwSHoUa0QWMdjJTRqiD8Hv78mk1GtuRmlE28TdJXk-8fpf9wNwOg29R840qBN7UtPiDb7Gk6DA7mnLPUVsiqrsXROrnPtenh_G_VhWqgn1zM1GMypkfHeWNKmDG5-x0DAB60VvqIrcg6Q",
+          "e": "AQAB"
         }
       ]
     }
