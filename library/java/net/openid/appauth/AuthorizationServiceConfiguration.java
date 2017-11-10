@@ -29,6 +29,8 @@ import net.openid.appauth.connectivity.ConnectionBuilder;
 import net.openid.appauth.connectivity.DefaultConnectionBuilder;
 import net.openid.appauth.internal.Logger;
 
+import org.geant.oidcfed.FederatedMetadataStatement;
+import org.geant.oidcfed.InvalidStatementException;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -375,12 +377,8 @@ public class AuthorizationServiceConfiguration {
                 JSONObject json = new JSONObject(Utils.readInputStream(is));
 
                 if (this.mAuthorizedKeys != null) {
-                    JSONObject federated_ms = getFederatedConfiguration(json, this.mAuthorizedKeys);
-                    if (federated_ms != null)
-                        json = federated_ms;
-                    else
-                        throw new AuthorizationServiceDiscovery.MissingArgumentException(
-                            "Validation of federated MS failed");
+                    FederatedMetadataStatement.MAX_CLOCK_SKEW = 60 * 60 * 24 * 90;
+                    json = getFederatedConfiguration(json, this.mAuthorizedKeys);
                 }
 
                 AuthorizationServiceDiscovery discovery =
@@ -401,6 +399,11 @@ public class AuthorizationServiceConfiguration {
                 mException = AuthorizationException.fromTemplate(
                         GeneralErrors.INVALID_DISCOVERY_DOCUMENT,
                         ex);
+            } catch (InvalidStatementException ex) {
+                Logger.errorWithStack(ex, "There was a problem validating federated statement");
+                mException = AuthorizationException.fromTemplate(
+                    GeneralErrors.INVALID_DISCOVERY_DOCUMENT,
+                    ex);
             } finally {
                 Utils.closeQuietly(is);
             }
