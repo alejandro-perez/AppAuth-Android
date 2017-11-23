@@ -45,6 +45,7 @@ public class RegistrationRequest {
     static final String PARAM_GRANT_TYPES = "grant_types";
     static final String PARAM_APPLICATION_TYPE = "application_type";
     static final String PARAM_SUBJECT_TYPE = "subject_type";
+    static final String PARAM_METADATA_STATEMENTS = "metadata_statements";
     static final String PARAM_TOKEN_ENDPOINT_AUTHENTICATION_METHOD = "token_endpoint_auth_method";
 
     private static final Set<String> BUILT_IN_PARAMS = builtInParams(
@@ -53,6 +54,7 @@ public class RegistrationRequest {
             PARAM_GRANT_TYPES,
             PARAM_APPLICATION_TYPE,
             PARAM_SUBJECT_TYPE,
+            PARAM_METADATA_STATEMENTS,
             PARAM_TOKEN_ENDPOINT_AUTHENTICATION_METHOD
     );
 
@@ -143,6 +145,10 @@ public class RegistrationRequest {
     @NonNull
     public final Map<String, String> additionalParameters;
 
+    /**
+     * Metadata statements
+     */
+    @Nullable final JSONObject metadataStatements;
 
     /**
      * Creates instances of {@link RegistrationRequest}.
@@ -164,6 +170,8 @@ public class RegistrationRequest {
 
         @Nullable
         private String mTokenEndpointAuthenticationMethod;
+
+        @Nullable JSONObject mMetadataStatements;
 
         @NonNull
         private Map<String, String> mAdditionalParameters = Collections.emptyMap();
@@ -294,6 +302,12 @@ public class RegistrationRequest {
             return this;
         }
 
+        @NonNull
+        public Builder setMetadataStatements(@Nullable JSONObject metadata_statements) {
+            mMetadataStatements = metadata_statements;
+            return this;
+        }
+
         /**
          * Constructs the registration request. At a minimum, the redirect URI must have been
          * set before calling this method.
@@ -308,6 +322,7 @@ public class RegistrationRequest {
                     mGrantTypes == null ? mGrantTypes : Collections.unmodifiableList(mGrantTypes),
                     mSubjectType,
                     mTokenEndpointAuthenticationMethod,
+                    mMetadataStatements,
                     Collections.unmodifiableMap(mAdditionalParameters));
         }
     }
@@ -319,6 +334,7 @@ public class RegistrationRequest {
             @Nullable List<String> grantTypes,
             @Nullable String subjectType,
             @Nullable String tokenEndpointAuthenticationMethod,
+            @Nullable JSONObject metadataStatements,
             @NonNull Map<String, String> additionalParameters) {
         this.configuration = configuration;
         this.redirectUris = redirectUris;
@@ -327,6 +343,7 @@ public class RegistrationRequest {
         this.subjectType = subjectType;
         this.tokenEndpointAuthenticationMethod = tokenEndpointAuthenticationMethod;
         this.additionalParameters = additionalParameters;
+        this.metadataStatements = metadataStatements;
         this.applicationType = APPLICATION_TYPE_NATIVE;
     }
 
@@ -380,6 +397,7 @@ public class RegistrationRequest {
         JsonUtil.putIfNotNull(json, PARAM_SUBJECT_TYPE, subjectType);
         JsonUtil.putIfNotNull(json, PARAM_TOKEN_ENDPOINT_AUTHENTICATION_METHOD,
                 tokenEndpointAuthenticationMethod);
+        JsonUtil.putIfNotNull(json, PARAM_METADATA_STATEMENTS, metadataStatements);
         return json;
     }
 
@@ -392,13 +410,13 @@ public class RegistrationRequest {
             throws JSONException {
         checkNotNull(json, "json must not be null");
         List<Uri> redirectUris = JsonUtil.getUriList(json, PARAM_REDIRECT_URIS);
-
         Builder builder = new RegistrationRequest.Builder(
                 AuthorizationServiceConfiguration.fromJson(json.getJSONObject(KEY_CONFIGURATION)),
                 redirectUris)
                 .setSubjectType(JsonUtil.getStringIfDefined(json, PARAM_SUBJECT_TYPE))
                 .setResponseTypeValues(JsonUtil.getStringListIfDefined(json, PARAM_RESPONSE_TYPES))
                 .setGrantTypeValues(JsonUtil.getStringListIfDefined(json, PARAM_GRANT_TYPES))
+                .setMetadataStatements(json.getJSONObject(PARAM_METADATA_STATEMENTS))
                 .setAdditionalParameters(JsonUtil.getStringMap(json, KEY_ADDITIONAL_PARAMETERS));
 
         return builder.build();

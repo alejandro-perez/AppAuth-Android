@@ -59,6 +59,9 @@ import net.openid.appauth.browser.BrowserMatcher;
 import net.openid.appauth.browser.ExactBrowserMatcher;
 import net.openid.appauthdemo.BrowserSelectionAdapter.BrowserInfo;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
@@ -328,12 +331,15 @@ public final class LoginActivity extends AppCompatActivity {
         runOnUiThread(() -> displayLoading("Dynamically registering client"));
         Log.i(TAG, "Dynamically registering client");
 
-        RegistrationRequest registrationRequest = new RegistrationRequest.Builder(
+
+        RegistrationRequest registrationRequest = null;
+        registrationRequest = new RegistrationRequest.Builder(
                 mAuthStateManager.getCurrent().getAuthorizationServiceConfiguration(),
                 Collections.singletonList(mConfiguration.getRedirectUri()))
                 .setTokenEndpointAuthenticationMethod(ClientSecretBasic.NAME)
+                .setMetadataStatements(mConfiguration.getMetadataStatements())
                 .build();
-
+        System.out.println(registrationRequest.toJsonString());
         mAuthService.performRegistrationRequest(
                 registrationRequest,
                 this::handleRegistrationResponse);

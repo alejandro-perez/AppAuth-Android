@@ -69,6 +69,8 @@ public final class Configuration {
     private boolean mHttpsRequired;
 
     private JSONObject mAuthorizedKeys;
+    private JSONObject mMetadataStatements;
+
     private JSONArray mAvailableOps;
 
     public static Configuration getInstance(Context context) {
@@ -162,6 +164,10 @@ public final class Configuration {
         return mAuthorizedKeys;
     }
 
+    public JSONObject getMetadataStatements() {
+        return mMetadataStatements;
+    }
+
     public JSONArray getAvailableOps() { return mAvailableOps; }
 
     public ConnectionBuilder getConnectionBuilder() {
@@ -198,6 +204,8 @@ public final class Configuration {
         mAuthorizedKeys = mConfigJson.optJSONObject("authorized_keys");
         if (mAuthorizedKeys == null)
             mAuthorizedKeys = new JSONObject();
+
+        mMetadataStatements = mConfigJson.optJSONObject("metadata_statements");
 
         mAvailableOps = mConfigJson.optJSONArray("available_ops");
         if (mAvailableOps == null)
