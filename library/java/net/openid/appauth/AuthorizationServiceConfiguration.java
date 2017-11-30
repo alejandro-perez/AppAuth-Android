@@ -152,7 +152,8 @@ public class AuthorizationServiceConfiguration {
     public JSONObject toJson() {
         JSONObject json = new JSONObject();
         JsonUtil.put(json, KEY_AUTHORIZATION_ENDPOINT, authorizationEndpoint.toString());
-        JsonUtil.put(json, KEY_TOKEN_ENDPOINT, tokenEndpoint.toString());
+        if (tokenEndpoint != null)
+            JsonUtil.put(json, KEY_TOKEN_ENDPOINT, tokenEndpoint.toString());
         if (registrationEndpoint != null) {
             JsonUtil.put(json, KEY_REGISTRATION_ENDPOINT, registrationEndpoint.toString());
         }
