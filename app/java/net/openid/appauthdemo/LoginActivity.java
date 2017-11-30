@@ -342,7 +342,8 @@ public final class LoginActivity extends AppCompatActivity {
         System.out.println(registrationRequest.toJsonString());
         mAuthService.performRegistrationRequest(
                 registrationRequest,
-                this::handleRegistrationResponse);
+                this::handleRegistrationResponse,
+                mConfiguration.getAuthorizedKeys());
     }
 
     @MainThread

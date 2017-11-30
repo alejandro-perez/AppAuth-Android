@@ -15,6 +15,7 @@
 package net.openid.appauth;
 
 import static net.openid.appauth.Preconditions.checkNotNull;
+import static org.geant.oidcfed.FederatedMetadataStatement.getFederatedConfiguration;
 
 import android.app.PendingIntent;
 import android.content.ActivityNotFoundException;
@@ -38,6 +39,8 @@ import net.openid.appauth.browser.CustomTabManager;
 import net.openid.appauth.internal.Logger;
 import net.openid.appauth.internal.UriUtil;
 
+import org.geant.oidcfed.FederatedMetadataStatement;
+import org.geant.oidcfed.InvalidStatementException;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -315,12 +318,27 @@ public class AuthorizationService {
      * The result of this request will be sent to the provided callback handler.
      */
     public void performRegistrationRequest(
-            @NonNull RegistrationRequest request,
-            @NonNull RegistrationResponseCallback callback) {
+        @NonNull RegistrationRequest request,
+        @NonNull RegistrationResponseCallback callback) {
         checkNotDisposed();
         Logger.debug("Initiating dynamic client registration %s",
-                request.configuration.registrationEndpoint.toString());
+            request.configuration.registrationEndpoint.toString());
         new RegistrationRequestTask(request, callback).execute();
+    }
+
+    /**
+     * Sends a request to the authorization service to dynamically register a client.
+     * The result of this request will be sent to the provided callback handler.
+     * This version supports federation
+     */
+    public void performRegistrationRequest(
+        @NonNull RegistrationRequest request,
+        @NonNull RegistrationResponseCallback callback,
+        @NonNull JSONObject authorized_keys) {
+        checkNotDisposed();
+        Logger.debug("Initiating dynamic client registration %s",
+            request.configuration.registrationEndpoint.toString());
+        new RegistrationRequestTask(request, callback, authorized_keys).execute();
     }
 
     /**
@@ -527,11 +545,20 @@ public class AuthorizationService {
         private RegistrationResponseCallback mCallback;
 
         private AuthorizationException mException;
+        private JSONObject mAuthorizedKeys;
 
         RegistrationRequestTask(RegistrationRequest request,
-                RegistrationResponseCallback callback) {
+                                RegistrationResponseCallback callback) {
             mRequest = request;
             mCallback = callback;
+            mAuthorizedKeys = null;
+        }
+
+        RegistrationRequestTask(RegistrationRequest request,
+                                RegistrationResponseCallback callback,
+                                JSONObject authorized_keys) {
+            this(request, callback);
+            mAuthorizedKeys = authorized_keys;
         }
 
         @Override
@@ -552,7 +579,13 @@ public class AuthorizationService {
 
                 is = conn.getInputStream();
                 String response = Utils.readInputStream(is);
-                return new JSONObject(response);
+                JSONObject json = new JSONObject(response);
+
+                if (this.mAuthorizedKeys != null) {
+                    FederatedMetadataStatement.MAX_CLOCK_SKEW = 60;
+                    json = getFederatedConfiguration(json, this.mAuthorizedKeys);
+                }
+                return json;
             } catch (IOException ex) {
                 Logger.debugWithStack(ex, "Failed to complete registration request");
                 mException = AuthorizationException.fromTemplate(
@@ -561,6 +594,11 @@ public class AuthorizationService {
                 Logger.debugWithStack(ex, "Failed to complete registration request");
                 mException = AuthorizationException.fromTemplate(
                         GeneralErrors.JSON_DESERIALIZATION_ERROR, ex);
+            } catch (InvalidStatementException ex) {
+                Logger.errorWithStack(ex, "There was a problem validating federated statement in the registration response.");
+                mException = AuthorizationException.fromTemplate(
+                    GeneralErrors.INVALID_REGISTRATION_RESPONSE,
+                    ex);
             } finally {
                 Utils.closeQuietly(is);
             }
