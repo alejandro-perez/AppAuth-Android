@@ -377,7 +377,7 @@ public class AuthorizationServiceConfiguration {
                 JSONObject json = new JSONObject(Utils.readInputStream(is));
 
                 if (this.mAuthorizedKeys != null) {
-                    FederatedMetadataStatement.MAX_CLOCK_SKEW = 60 * 60 * 24 * 90;
+                    FederatedMetadataStatement.MAX_CLOCK_SKEW = 60;
                     json = getFederatedConfiguration(json, this.mAuthorizedKeys);
                 }
 
