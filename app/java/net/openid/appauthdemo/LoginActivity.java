@@ -186,7 +186,7 @@ public final class LoginActivity extends AppCompatActivity {
 
         configureBrowserSelector();
         configureOpSelector();
-        this.disableSSLCertificateChecking();
+        disableSSLCertificateChecking();
 
         if (mConfiguration.hasConfigurationChanged()) {
             // discard any existing authorization state due to the change of configuration
