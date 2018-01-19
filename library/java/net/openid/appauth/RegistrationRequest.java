@@ -148,7 +148,8 @@ public class RegistrationRequest {
     /**
      * Metadata statements
      */
-    @Nullable final JSONObject metadataStatements;
+    @Nullable
+    public final JSONObject metadataStatements;
 
     /**
      * Creates instances of {@link RegistrationRequest}.
