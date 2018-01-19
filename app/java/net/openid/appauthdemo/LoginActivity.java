@@ -345,18 +345,8 @@ public final class LoginActivity extends AppCompatActivity {
         try {
             JSONObject metadataStatements = FederatedMetadataStatement.genFederatedConfiguration(
                 new JSONObject(registrationRequest.toJsonString()),
-                mConfiguration.getMetadataStatements(), JWKSet.parse("{\n" +
-                    "  \"keys\": [\n" +
-                    "    {\n" +
-                    "      \"e\": \"AQAB\",\n" +
-                    "      \"use\": \"sig\",\n" +
-                    "      \"n\": \"wGKUsmj6191r88vyyLDGy-ZsXoq3Xys9KQRFOzX6IvrYgIeJMi3mRL24Isae3CIsApWm9lSfX7HkaNSXPnKQannB91LPNTGCTz0prhtF2W_DZp-QQwwRV2oACK1nX4BP-I7bqm7EZs8ywHdnbX7Rwra31xnCtj_79rR1TJeR6Bkwhv-XiHAeixxnpbkWPGwTbLGmaC-Wm1xs3L9cEefFkeXGqsjJuUNE9f6PsZIpINu0OFr1Vn8V7dXM5Fd0_yMdDE7RHVOOcAtCFHCH06TFtpJDLvnTSBr4I9aAs3X7k1c2s-CP1YaHi9F4NiMpTNltYIfHV2OeBixLW5-0SEgvLw\",\n" +
-                    "      \"d\": \"LDIZZdj_EzsPMy0do6QUrz_Kknd8g7TrsnIEM4OFaKbGuNQqHOh1d0I8PGTzlq-U-60Ec59iE3pK9hgsfJCWA5fgCuCvsFEk1e4_lns2cyqdMYSjf_uUOkgkJNotHr_b30Z2STN0FAgyaQulK37QUlJmblhBJlwRlo3DSqqhPrewMRaowyWOC2gcxvLyxQ_GU9aqD6t_DXkfWn5hhHF9VBfL5UGPtvDmv9_on0r4qdQ037Kc7-D9JUuQxk6uPrQccNi6ivPuspBKVdwW5tm0vUb0Y2hf0ZtslGsQ9McaU8_JyQRlFFaXRAsRNHmZQwkkPB5wyJRp6uZnpl_nIsv0eQ\",\n" +
-                    "      \"kty\": \"RSA\",\n" +
-                    "      \"kid\": \"kyhjlFoDhW2bAkeAnSpRDLdB_0FpHt4Mzkom0pqI7LE\"\n" +
-                    "    }\n" +
-                    "  ]\n" +
-                    "}\n"),
+                mConfiguration.getMetadataStatements(),
+                mConfiguration.getSigningKeys(),
                 "AppAuth");
             // rebuild the registration request with the metadata statements
             registrationRequest = new RegistrationRequest.Builder(
@@ -365,7 +355,7 @@ public final class LoginActivity extends AppCompatActivity {
                 .setTokenEndpointAuthenticationMethod(ClientSecretBasic.NAME)
                 .setMetadataStatements(metadataStatements)
                 .build();
-        } catch (InvalidStatementException | JSONException | ParseException e) {
+        } catch (InvalidStatementException | JSONException e) {
             e.printStackTrace();
         }
 

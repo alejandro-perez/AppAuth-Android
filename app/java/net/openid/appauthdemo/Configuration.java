@@ -70,6 +70,7 @@ public final class Configuration {
 
     private JSONObject mAuthorizedKeys;
     private JSONObject mMetadataStatements;
+    private JSONObject mSigningKeys;
 
     private JSONArray mAvailableOps;
 
@@ -168,6 +169,8 @@ public final class Configuration {
         return mMetadataStatements;
     }
 
+    public JSONObject getSigningKeys() {return mSigningKeys;}
+
     public JSONArray getAvailableOps() { return mAvailableOps; }
 
     public ConnectionBuilder getConnectionBuilder() {
@@ -206,6 +209,7 @@ public final class Configuration {
             mAuthorizedKeys = new JSONObject();
 
         mMetadataStatements = mConfigJson.optJSONObject("metadata_statements");
+        mSigningKeys = mConfigJson.optJSONObject("signing_keys");
 
         mAvailableOps = mConfigJson.optJSONArray("available_ops");
         if (mAvailableOps == null)
