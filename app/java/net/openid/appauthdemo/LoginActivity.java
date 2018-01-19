@@ -341,23 +341,9 @@ public final class LoginActivity extends AppCompatActivity {
                 mAuthStateManager.getCurrent().getAuthorizationServiceConfiguration(),
                 Collections.singletonList(mConfiguration.getRedirectUri()))
                 .setTokenEndpointAuthenticationMethod(ClientSecretBasic.NAME)
+                .setMetadataStatements(mConfiguration.getMetadataStatements())
+                .setSigningKeys(mConfiguration.getSigningKeys())
                 .build();
-        try {
-            JSONObject metadataStatements = FederatedMetadataStatement.genFederatedConfiguration(
-                new JSONObject(registrationRequest.toJsonString()),
-                mConfiguration.getMetadataStatements(),
-                mConfiguration.getSigningKeys(),
-                "AppAuth");
-            // rebuild the registration request with the metadata statements
-            registrationRequest = new RegistrationRequest.Builder(
-                mAuthStateManager.getCurrent().getAuthorizationServiceConfiguration(),
-                Collections.singletonList(mConfiguration.getRedirectUri()))
-                .setTokenEndpointAuthenticationMethod(ClientSecretBasic.NAME)
-                .setMetadataStatements(metadataStatements)
-                .build();
-        } catch (InvalidStatementException | JSONException e) {
-            e.printStackTrace();
-        }
 
         System.out.println(registrationRequest.toJsonString());
         mAuthService.performRegistrationRequest(

@@ -24,6 +24,8 @@ import android.net.Uri;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
+import org.geant.oidcfed.FederatedMetadataStatement;
+import org.geant.oidcfed.InvalidStatementException;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -152,6 +154,12 @@ public class RegistrationRequest {
     public final JSONObject metadataStatements;
 
     /**
+     * Signing keys
+     */
+    @Nullable
+    public final JSONObject signingKeys;
+
+    /**
      * Creates instances of {@link RegistrationRequest}.
      */
     public static final class Builder {
@@ -173,6 +181,8 @@ public class RegistrationRequest {
         private String mTokenEndpointAuthenticationMethod;
 
         @Nullable JSONObject mMetadataStatements;
+
+        @Nullable JSONObject mSigningKeys;
 
         @NonNull
         private Map<String, String> mAdditionalParameters = Collections.emptyMap();
@@ -304,8 +314,14 @@ public class RegistrationRequest {
         }
 
         @NonNull
-        public Builder setMetadataStatements(@Nullable JSONObject metadata_statements) {
+        public Builder setMetadataStatements(@NonNull JSONObject metadata_statements) {
             mMetadataStatements = metadata_statements;
+            return this;
+        }
+
+        @NonNull
+        public Builder setSigningKeys(@NonNull JSONObject signing_keys) {
+            mSigningKeys = signing_keys;
             return this;
         }
 
@@ -324,6 +340,7 @@ public class RegistrationRequest {
                     mSubjectType,
                     mTokenEndpointAuthenticationMethod,
                     mMetadataStatements,
+                    mSigningKeys,
                     Collections.unmodifiableMap(mAdditionalParameters));
         }
     }
@@ -336,6 +353,7 @@ public class RegistrationRequest {
             @Nullable String subjectType,
             @Nullable String tokenEndpointAuthenticationMethod,
             @Nullable JSONObject metadataStatements,
+            @Nullable JSONObject signingKeys,
             @NonNull Map<String, String> additionalParameters) {
         this.configuration = configuration;
         this.redirectUris = redirectUris;
@@ -345,6 +363,7 @@ public class RegistrationRequest {
         this.tokenEndpointAuthenticationMethod = tokenEndpointAuthenticationMethod;
         this.additionalParameters = additionalParameters;
         this.metadataStatements = metadataStatements;
+        this.signingKeys = signingKeys;
         this.applicationType = APPLICATION_TYPE_NATIVE;
     }
 
@@ -398,7 +417,17 @@ public class RegistrationRequest {
         JsonUtil.putIfNotNull(json, PARAM_SUBJECT_TYPE, subjectType);
         JsonUtil.putIfNotNull(json, PARAM_TOKEN_ENDPOINT_AUTHENTICATION_METHOD,
                 tokenEndpointAuthenticationMethod);
-        JsonUtil.putIfNotNull(json, PARAM_METADATA_STATEMENTS, metadataStatements);
+
+        if (metadataStatements != null && signingKeys != null) {
+            try {
+                JsonUtil.putIfNotNull(
+                    json, PARAM_METADATA_STATEMENTS,
+                    FederatedMetadataStatement.genFederatedConfiguration(
+                        json, metadataStatements, signingKeys, "AppAuth"));
+            } catch (InvalidStatementException e) {
+                e.printStackTrace();
+            }
+        }
         return json;
     }
 
