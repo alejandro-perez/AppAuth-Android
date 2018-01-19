@@ -3,13 +3,7 @@
   "redirect_uri": "net.openid.appauthdemo:/oauth2redirect",
   "authorization_scope": "openid email profile",
   "available_ops": [
-    "https://oidcfed.inf.um.es:8777",
-    "https://testop.funet.fi",
-    "https://satosa.lxd:8000",
-    "https://minifed.lxd:8777",
-    "https://agaton-sax.com:8080/foo/rp-sms-single-l0/",
-    "https://agaton-sax.com:8080/foo/rp-sms-policy-err-l1/",
-    "https://agaton-sax.com:8080/foo/rp-sms-wrong-key/"
+    "https://minifed.lxd:8777"
   ],
   "authorization_endpoint_uri": "",
   "token_endpoint_uri": "",
@@ -17,38 +11,8 @@
   "https_required": false,
   "metadata_statements": {
     "https://swamid.sunet.se": "eyJhbGciOiJSUzI1NiIsImtpZCI6IkVtTTdUaEFzSnFycDJ5bjc4M0U1Vkh0cHNPbHBvd19HNy0yNWJ0d3JwNmcifQ.eyJpc3MiOiAiaHR0cHM6Ly9zd2FtaWQuc3VuZXQuc2UiLCAiZXhwIjogMTUxNjY2MDMyNSwgImp0aSI6ICI1ZmZiNDRjM2ZkNTY0NjY3OWY5Y2FiOGY4ZWU5NTI1ZiIsICJzaWduaW5nX2tleXMiOiB7ImtleXMiOiBbeyJlIjogIkFRQUIiLCAidXNlIjogInNpZyIsICJrdHkiOiAiUlNBIiwgIm4iOiAid0dLVXNtajYxOTFyODh2eXlMREd5LVpzWG9xM1h5czlLUVJGT3pYNkl2cllnSWVKTWkzbVJMMjRJc2FlM0NJc0FwV205bFNmWDdIa2FOU1hQbktRYW5uQjkxTFBOVEdDVHowcHJodEYyV19EWnAtUVF3d1JWMm9BQ0sxblg0QlAtSTdicW03RVpzOHl3SGRuYlg3UndyYTMxeG5DdGpfNzlyUjFUSmVSNkJrd2h2LVhpSEFlaXh4bnBia1dQR3dUYkxHbWFDLVdtMXhzM0w5Y0VlZkZrZVhHcXNqSnVVTkU5ZjZQc1pJcElOdTBPRnIxVm44VjdkWE01RmQwX3lNZERFN1JIVk9PY0F0Q0ZIQ0gwNlRGdHBKREx2blRTQnI0STlhQXMzWDdrMWMycy1DUDFZYUhpOUY0TmlNcFRObHRZSWZIVjJPZUJpeExXNS0wU0Vndkx3IiwgImtpZCI6ICJreWhqbEZvRGhXMmJBa2VBblNwUkRMZEJfMEZwSHQ0TXprb20wcHFJN0xFIn1dfSwgImlhdCI6IDE1MTYzMDAzMjUsICJraWQiOiAiRW1NN1RoQXNKcXJwMnluNzgzRTVWSHRwc09scG93X0c3LTI1YnR3cnA2ZyJ9.B-WzkSVMBzt-ktA69jYJeTN3lBTvfOy-blD0rIGlceQBc6sIiBIL7y_hVMZLiTCc-LG_7Z-KSyi7IDF1bqzJplCak8elEw8xiJL2HngtEo7fdhVYz8OqPRD7kZ64yxN2d1pM6UFgWjyv4ahr69x_lsBIuH0peOd6eZYvzGzQ7pTvD6nj-Sl0CX8eqGC6Rnx4I0WNdpZLPw77Va7ApDTFqqr0Z7HcvDn_mzoaPHvbWHamMIn3nxVA0DaexqTFtRlDnms8cPS4X43wFy5-Aul0mOpe8PTw3CMlOIzsGCRNvb0PWCeXD9RMuGAGS4Ux7Q8XhVwVSVSb__POG0liUMsSJA"
-
   },
   "authorized_keys": {
-    "https://edugain.org/": {
-      "keys": [
-        {
-          "kty": "RSA",
-          "n": "swjDdW7ehJe9PXV_p9NXuzYZMENmvjRwhazo0WBaAyaJe2M4jVFOUnVyXgGfrAcTs1wrVfm_3E97tCywseGHE6srCAiZSbQFbCRA7UGyH4GErgskLwIaCXlkB_dC78oC_RwBgEDRlEzmqzAd6hU-QNdF3ebkYt2qdKZsYfrdLuB2FwsUpJ1KVBqNkTEYdcAWdMhW_tisTFdfr-0t9ToPtJbOBEtgnsq0-_5YjkPLPonczaDfcluO_iow8reDyqH8VQgDtWL89WL_sbKLKYV4Mk6ZVtI_EmQAO4Ljf_A3aEoXb9YF_1a3eBiF9x8OY65F_ha2dZ37XpbHGcBrG2WUNQ",
-          "kid": "YHHyx7st8uv2HVnkoptOU1dheyn3t0rb7foQLHIGkVI",
-          "use": "sig",
-          "e": "AQAB"
-        }
-      ]
-    },
-    "https://edugain.com": {
-      "keys": [
-        {
-          "e": "AQAB",
-          "kid": "ck8yJKny9s2dGavjQ4NMZYEIiExaPOEjTIygCz1OnS0",
-          "kty": "RSA",
-          "n": "s0juoO0JJBd1u0oLkML71tXfyQv_Re7tD0inu8jzshMg-97DQjajoCyKfXgSmx0mVcBETE3wKFHeEShH4gDZDdlvrBFciHi7SmlJabgznu4rairfHHrBr2H3HwL6Vp7OyUkQLVUkmAqTR_ZUuNXnkyr3SQ0PjVrhLQQJ60RFHmw8AAer-cIgJDzpwiSG7Lh6u9PqufDw2-Go_xqEvyMvEFdyxbRdWmwCRHHNWn2ICU-1avfKt6eF8z-WDsThG4FvOiU3tWR45hLXUM4r78JznHsbCNVGXESsABgdbyDH_QUuhXFiu3_onzeKXfl7YOg3jMxSZXYo5-opNToOKl0ILQ",
-          "use": "sig"
-        },
-        {
-          "kid": "2kmUXi6jS9rQ6BzWst2rJGwwXvZSfwRouR1u8ezSpfA",
-          "kty": "RSA",
-          "use": "sig",
-          "n": "wTc569WwiJU6QBPgnSu8rtQTt4Gq-rOX3COcWNIc_wEhlMX3NjQI5ybNvII_D3PCLA_E0hkxKDKlzQ0zx2z8fMrX2XqS8mOZFJyCUzk1eWefvkDPK6mcO4EhEuDsAkZ2pqhYgTKIUg_g-b3FgFwanUPJtnkZzbcTfy4fyVUPdhTXUS4LhvI6B6RTCIpQW1ziygLhDSyglPnSFbhFDsvQFUf3uaF4kc6bgu1LtnUT1VN3WTvMw-MXZuPXiPHu-eUeVmKI29cg1DVzNLqQfPhxwtDhM7FhN1bYbs2Xgl5lLiaYUkc2_5wi0RZUhw5_JLYE5FYPbtvzsUvu76IsMssDUQ",
-          "e": "AQAB"
-        }
-      ]
-    },
     "https://swamid.sunet.se": {
       "keys": [
         {
@@ -57,24 +21,6 @@
           "use": "sig",
           "n": "ly_QDZ1YXpViyZFBctj80i03l8WNxhUEgSVLNDEXNtC4B4DLv_pcEnD_QKa9A5LsRjCwq6jvPgOqxLKjjDGp4Lbt_lK6fJ4MlHX3r6ZDBQl7Iluci4RBS6bUm_5GwK8UTJiCATyOEOi6UQOP7YmiFLg-wH1f6QWwE2TJ8hfClSZZmvz-i4VXG4TtZzt1p5brluluQapQ1F1ZVCgzG747H6KyneHZEIjcjY-60OXWVYlMfAVYnNFtTQLvrGgAaXj-uFeGDN902Civs-3BRZ81OsJeUJlqKIS8jhHhhXNY-MHOBzm1PDfdJ6dI28xI_rvxU2Evkp_9aZdgc04P5G5f4Q",
           "kid": "EmM7ThAsJqrp2yn783E5VHtpsOlpow_G7-25btwrp6g"
-        }
-      ]
-    },
-    "https://example.com": {
-      "keys": [
-        {
-          "e": "AQAB",
-          "kid": "IE9j7bhLiWnP9mSaC90_tEYZ0VLWplexcRXILgyDlIk",
-          "n": "orhW0TRv1yjiuvjBnmlrB1kAMPqN0G9-P1xt49kSQcPPvGrUZv4TolTs86voRo9TNAUHU1jN1P55WRiJRkBTEajFg5vl9tASWNX0Pk8wYUQHnR-miJS-fUl8IU-QjvdwswhBTFQNfMIfh9qNMtRSR3d-7e2u78109w_DQ_Z9EOwHG9QpXIft33MSvIh3AZaN7yA5SQp3QQEZtnhNgk3BLr6oA0YD55oaa7nv20THFtlRuczlXZKzJ10vmkmsTrCKTVY1bAUcFTyiNrDRwEaffhPxX_b8RsYMfP4j7GP2NopjsGbz-Kv3PQjoUHRJDerDE88iCMcKss-iGNkeg23CMQ",
-          "kty": "RSA",
-          "use": "sig"
-        },
-        {
-          "kid": "7TnWOKF0Znlsf-ok08w7oFL474A4IuxOQqwSIlz3MS4",
-          "kty": "RSA",
-          "use": "sig",
-          "n": "otD_zD70kTHNMKF-SxbB_u9_v4edwGB3vKRfF2WnR2Cq4qqfFEJPb_KuISoiHstSpsgHgs7EDL2P9_0RQcgip_ctYOrISllRBKcLYJ8tOOQENQyJKngoOsm6IkUxPHQ8PVwbTemvZqbvtzC04YwK2c14nmZter9LXwChAZtB80ZzktsUw9_PUcDiR7EyeVh2cSzaZ14dFmwSHoUa0QWMdjJTRqiD8Hv78mk1GtuRmlE28TdJXk-8fpf9wNwOg29R840qBN7UtPiDb7Gk6DA7mnLPUVsiqrsXROrnPtenh_G_VhWqgn1zM1GMypkfHeWNKmDG5-x0DAB60VvqIrcg6Q",
-          "e": "AQAB"
         }
       ]
     }
