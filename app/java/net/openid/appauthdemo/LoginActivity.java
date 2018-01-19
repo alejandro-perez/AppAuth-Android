@@ -43,9 +43,6 @@ import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.TextView;
-
-import com.nimbusds.jose.jwk.JWKSet;
-
 import net.openid.appauth.AppAuthConfiguration;
 import net.openid.appauth.AuthState;
 import net.openid.appauth.AuthorizationException;
@@ -61,16 +58,10 @@ import net.openid.appauth.browser.BrowserMatcher;
 import net.openid.appauth.browser.ExactBrowserMatcher;
 import net.openid.appauthdemo.BrowserSelectionAdapter.BrowserInfo;
 
-import org.geant.oidcfed.FederatedMetadataStatement;
-import org.geant.oidcfed.InvalidStatementException;
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
-import java.text.ParseException;
 import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
